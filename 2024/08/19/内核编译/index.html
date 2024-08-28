@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="jetson-linux编译内核本次博客记录基于x86_64平台交叉编译jetson nano的linux内核 顶层目录首先进入到顶层目录 1cd &#x2F;home&#x2F;jym&#x2F;code&#x2F;linux&#x2F;ec20_driver_pro  顶层目录分布如下： kernel_out为编译输出目标文件夹 gcc-linaro-x86_64_aarch64-linux-gnu为交叉编译器，下载地址Linaro Rele">
+<meta property="og:type" content="article">
+<meta property="og:title" content="内核编译">
+<meta property="og:url" content="http://example.com/2024/08/19/%E5%86%85%E6%A0%B8%E7%BC%96%E8%AF%91/index.html">
+<meta property="og:site_name" content="凌云苑">
+<meta property="og:description" content="jetson-linux编译内核本次博客记录基于x86_64平台交叉编译jetson nano的linux内核 顶层目录首先进入到顶层目录 1cd &#x2F;home&#x2F;jym&#x2F;code&#x2F;linux&#x2F;ec20_driver_pro  顶层目录分布如下： kernel_out为编译输出目标文件夹 gcc-linaro-x86_64_aarch64-linux-gnu为交叉编译器，下载地址Linaro Rele">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20240819121818432.png">
+<meta property="og:image" content="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20240820131402657.png">
+<meta property="og:image" content="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20240820131549697.png">
+<meta property="og:image" content="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20240819123646238.png">
+<meta property="og:image" content="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20240820132308979.png">
+<meta property="og:image" content="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20240820132459718.png">
+<meta property="og:image" content="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20240820132704868.png">
+<meta property="og:image" content="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20240820132946467.png">
+<meta property="og:image" content="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20240820133113728.png">
+<meta property="og:image" content="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20240820133123001.png">
+<meta property="article:published_time" content="2024-08-19T04:02:43.253Z">
+<meta property="article:modified_time" content="2024-08-20T05:39:57.189Z">
+<meta property="article:author" content="ADonkey">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20240819121818432.png">
+
+<link rel="canonical" href="http://example.com/2024/08/19/%E5%86%85%E6%A0%B8%E7%BC%96%E8%AF%91/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>内核编译 | 凌云苑</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">凌云苑</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2024/08/19/%E5%86%85%E6%A0%B8%E7%BC%96%E8%AF%91/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="ADonkey">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="凌云苑">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          内核编译
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2024-08-19 12:02:43" itemprop="dateCreated datePublished" datetime="2024-08-19T12:02:43+08:00">2024-08-19</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2024-08-20 13:39:57" itemprop="dateModified" datetime="2024-08-20T13:39:57+08:00">2024-08-20</time>
+              </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="jetson-linux编译内核"><a href="#jetson-linux编译内核" class="headerlink" title="jetson-linux编译内核"></a>jetson-linux编译内核</h1><p>本次博客记录基于x86_64平台交叉编译jetson nano的linux内核</p>
+<h2 id="顶层目录"><a href="#顶层目录" class="headerlink" title="顶层目录"></a>顶层目录</h2><p>首先进入到顶层目录</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cd</span> /home/jym/code/linux/ec20_driver_pro</span><br></pre></td></tr></table></figure>
+
+<p>顶层目录分布如下：</p>
+<p>kernel_out为编译输出目标文件夹</p>
+<p>gcc-linaro-x86_64_aarch64-linux-gnu为交叉编译器，下载地址<a target="_blank" rel="noopener" href="http://releases.linaro.org/components/toolchain/binaries/7.3-2018.05/aarch64-linux-gnu/">Linaro Releases</a></p>
+<p>其他为kernel_src.tar解压得到；内核相关文件在<code>$&#123;PWD&#125;/kernel/kernel-4.9</code></p>
+<p><img src="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20240819121818432.png" alt="image-20240819121818432"></p>
+<h2 id="设置环境变量"><a href="#设置环境变量" class="headerlink" title="设置环境变量"></a>设置环境变量</h2><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">export</span> CROSS_COMPILE_AARCH64=~/home/jym/code/linux/ec20_driver_pro/gcc-linaro-7.3.1-2018.05-x86_64_aarch64-linux-gnu/bin/aarch64-linux-gnu- <span class="comment">#尽量使用绝对路径或在内核顶层目录使用相对路径</span></span><br><span class="line"></span><br><span class="line">之前方法是以下：</span><br><span class="line"><span class="built_in">export</span> CROSS_COMPILE=~/home/jym/code/linux/ec20_driver_pro/gcc-linaro-7.3.1-2018.05-x86_64_aarch64-linux-gnu/bin/aarch64-linux-gnu- <span class="comment">#尽量使用绝对路径或在内核顶层目录使用相对路径</span></span><br></pre></td></tr></table></figure>
+
+<p>设置好环境变量之后，下面有两种方法编译内核：一是英伟达官方的自动编译脚本<code>nvbuild.sh</code>，在顶层目录执行以下命令即可：</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">./nvbuild.sh -o <span class="variable">$PWD</span>/kernel_out</span><br></pre></td></tr></table></figure>
+
+<p>下面对另一种方法进行介绍</p>
+<h2 id="手动编译"><a href="#手动编译" class="headerlink" title="手动编译"></a>手动编译</h2><p>编译的项目有：<code>config</code>配置文件，<code>Image</code>，<code>dtbs</code>，<code>modules</code></p>
+<p>下面操作均在顶层目录下进行</p>
+<h3 id="生成config配置文件"><a href="#生成config配置文件" class="headerlink" title="生成config配置文件"></a>生成config配置文件</h3><figure class="highlight makefile"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">make -C $&#123;PWD&#125;/kernel/kernel-4.9/ ARCH=arm64 LOCALVERSION=<span class="string">&quot;-tegra&quot;</span> CROSS_COMPILE=<span class="string">&quot;$&#123;CROSS_COMPILE_AARCH64&#125;&quot;</span>  O=$&#123;PWD&#125;/kernel_out  tegra_defconfig</span><br><span class="line"></span><br><span class="line"><span class="comment">#make ARCH=arm64 LOCALVERSION=&quot;-tegra&quot; CROSS_COMPILE=&quot;$&#123;CROSS_COMPILE_AARCH64&#125;&quot;  tegra_defconfig</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="生成menuconfig配置"><a href="#生成menuconfig配置" class="headerlink" title="生成menuconfig配置"></a>生成menuconfig配置</h3><figure class="highlight makefile"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">make -C $&#123;PWD&#125;/kernel/kernel-4.9/ ARCH=arm64 LOCALVERSION=<span class="string">&quot;-tegra&quot;</span> CROSS_COMPILE=<span class="string">&quot;$&#123;CROSS_COMPILE_AARCH64&#125;&quot;</span>  O=$&#123;PWD&#125;/kernel_out  menuconfig</span><br></pre></td></tr></table></figure>
+
+<h3 id="生成Image"><a href="#生成Image" class="headerlink" title="生成Image"></a>生成Image</h3><figure class="highlight makefile"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">make -C $&#123;PWD&#125;/kernel/kernel-4.9/ ARCH=arm64 LOCALVERSION=<span class="string">&quot;-tegra&quot;</span> CROSS_COMPILE=<span class="string">&quot;$&#123;CROSS_COMPILE_AARCH64&#125;&quot;</span>  O=$&#123;PWD&#125;/kernel_out  Image -j12</span><br></pre></td></tr></table></figure>
+
+<h3 id="生成dtb"><a href="#生成dtb" class="headerlink" title="生成dtb"></a>生成dtb</h3><p>主要的设备树文件：<code>tegra194-p2888-0001-p2822-0000.dtb</code><br>关注的目录为：<br><code>kernel_src/hardware/nvidia/platform/t19x/galen/kernel-dts</code><br>关注的文件：<br>    <code>tegra234-p3767-0003-p3768-0000-a0.dts</code></p>
+<figure class="highlight makefile"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">make -C $&#123;PWD&#125;/kernel/kernel-4.9/ ARCH=arm64 LOCALVERSION=<span class="string">&quot;-tegra&quot;</span> CROSS_COMPILE=<span class="string">&quot;$&#123;CROSS_COMPILE_AARCH64&#125;&quot;</span>  O=$&#123;PWD&#125;/kernel_out  dtbs -j12</span><br></pre></td></tr></table></figure>
+
+<p><code>/home/ada/jetson/nvdia_35_4/kernel_src/hardware/nvidia/platform/t23x/p3768/kernel-dts/tegra234-p3767-0003-p3768-0000-a0.dts</code><br>生成的文件在这：<br><code>./kernel_out/arch/arm64/boot/dts/nvidia/tegra234-p3767-0003-p3768-0000-a0.dtb</code></p>
+<h3 id="编译模块"><a href="#编译模块" class="headerlink" title="编译模块"></a>编译模块</h3><p>编译</p>
+<figure class="highlight makefile"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">make -C $&#123;PWD&#125;/kernel/kernel-4.9/ ARCH=arm64 LOCALVERSION=<span class="string">&quot;-tegra&quot;</span> CROSS_COMPILE=<span class="string">&quot;$&#123;CROSS_COMPILE_AARCH64&#125;&quot;</span>  O=$&#123;PWD&#125;/kernel_out  modules -j12</span><br></pre></td></tr></table></figure>
+
+<p>安装模块 按照linux内核文件架构安装在kernel_out中</p>
+<figure class="highlight makefile"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">make -C $&#123;PWD&#125;/kernel/kernel-4.9/ ARCH=arm64 LOCALVERSION=<span class="string">&quot;-tegra&quot;</span> CROSS_COMPILE=<span class="string">&quot;$&#123;CROSS_COMPILE_AARCH64&#125;&quot;</span>  O=$&#123;PWD&#125;/kernel_out INSTALL_MOD_STRIP=1 modules_install INSTALL_MOD_PATH=modules</span><br></pre></td></tr></table></figure>
+
+<h3 id="清除构建"><a href="#清除构建" class="headerlink" title="清除构建"></a>清除构建</h3><figure class="highlight makefile"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">make -C $&#123;PWD&#125;/kernel/kernel-5.10/ ARCH=arm64 LOCALVERSION=<span class="string">&quot;-tegra&quot;</span> CROSS_COMPILE=<span class="string">&quot;$&#123;CROSS_COMPILE_AARCH64&#125;&quot;</span>  O=$&#123;PWD&#125;/kernel_out clean</span><br></pre></td></tr></table></figure>
+
+<h2 id="移植移远4G模块"><a href="#移植移远4G模块" class="headerlink" title="移植移远4G模块"></a>移植移远4G模块</h2><h3 id="修改内核文件"><a href="#修改内核文件" class="headerlink" title="修改内核文件"></a>修改内核文件</h3><h4 id="option-c"><a href="#option-c" class="headerlink" title="option.c"></a>option.c</h4><p>修改 <strong>[KERNEL_SRC] &#x2F;kernel&#x2F;kernel-5.10&#x2F;drivers&#x2F;usb&#x2F;serial&#x2F;option.c</strong> 文件</p>
+<p>1.添加USB设备VID和PID</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">usb_device_id</span> <span class="title">option_ids</span>[] =</span> &#123;</span><br><span class="line"><span class="comment">/******************      modify     *************************/</span></span><br><span class="line">	&#123; USB_DEVICE(<span class="number">0x2C7C</span>, <span class="number">0x6005</span>) &#125;,<span class="comment">/* Quectel EC200A: add VID and PID */</span></span><br><span class="line"><span class="comment">/******************      modify     *************************/</span></span><br><span class="line">	&#123; USB_DEVICE(OPTION_VENDOR_ID, OPTION_PRODUCT_COLT) &#125;,</span><br><span class="line">	&#123; USB_DEVICE(OPTION_VENDOR_ID, OPTION_PRODUCT_RICOLA) &#125;,</span><br><span class="line">	&#123; USB_DEVICE(OPTION_VENDOR_ID, OPTION_PRODUCT_RICOLA_LIGHT) &#125;,</span><br><span class="line">	&#123; USB_DEVICE(OPTION_VENDOR_ID, OPTION_PRODUCT_RICOLA_QUAD) &#125;,</span><br><span class="line">	&#123; USB_DEVICE(OPTION_VENDOR_ID, OPTION_PRODUCT_RICOLA_QUAD_LIGHT) &#125;,</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20240820131402657.png" alt="image-20240820131402657"></p>
+<p>2.添加掉电恢复机制</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">usb_serial_driver</span> <span class="title">option_1port_device</span> =</span> &#123;</span><br><span class="line">	.driver = &#123;</span><br><span class="line">		.owner =	THIS_MODULE,</span><br><span class="line">		.name =		<span class="string">&quot;option1&quot;</span>,</span><br><span class="line">	&#125;,</span><br><span class="line">	.description       = <span class="string">&quot;GSM modem (1-port)&quot;</span>,</span><br><span class="line">	.id_table          = option_ids,</span><br><span class="line">	.num_ports         = <span class="number">1</span>,</span><br><span class="line">	.probe             = option_probe,</span><br><span class="line">	.open              = usb_wwan_open,</span><br><span class="line">	.close             = usb_wwan_close,</span><br><span class="line">	.dtr_rts	   = usb_wwan_dtr_rts,</span><br><span class="line">	.write             = usb_wwan_write,</span><br><span class="line">	.write_room        = usb_wwan_write_room,</span><br><span class="line">	.chars_in_buffer   = usb_wwan_chars_in_buffer,</span><br><span class="line">	.tiocmget          = usb_wwan_tiocmget,</span><br><span class="line">	.tiocmset          = usb_wwan_tiocmset,</span><br><span class="line">	.ioctl             = usb_wwan_ioctl,</span><br><span class="line">	.attach            = option_attach,</span><br><span class="line">	.release           = option_release,</span><br><span class="line">	.port_probe        = usb_wwan_port_probe,</span><br><span class="line">	.port_remove	   = usb_wwan_port_remove,</span><br><span class="line">	.read_int_callback = option_instat_callback,</span><br><span class="line"><span class="meta">#<span class="keyword">ifdef</span> CONFIG_PM</span></span><br><span class="line">	.suspend           = usb_wwan_suspend,</span><br><span class="line">	.resume            = usb_wwan_resume,</span><br><span class="line"><span class="comment">/******************      modify     *************************/</span></span><br><span class="line">	.reset_resume      = usb_wwan_resume, <span class="comment">/*Quectel EC200A: add reset resume*/</span></span><br><span class="line"><span class="comment">/******************      modify     *************************/</span></span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+
+
+<p><img src="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20240820131549697.png" alt="image-20240820131549697"></p>
+<h4 id="usb-wwan-c"><a href="#usb-wwan-c" class="headerlink" title="usb_wwan.c"></a>usb_wwan.c</h4><p><strong>修改 [KERNEL_SRC] &#x2F;kernel&#x2F;kernel-5.10&#x2F;drivers&#x2F;usb&#x2F;serial&#x2F;usb_wwan.c 文件</strong></p>
+<p>添加零包机制</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="keyword">struct</span> urb *<span class="title function_">usb_wwan_setup_urb</span><span class="params">(<span class="keyword">struct</span> usb_serial_port *port,</span></span><br><span class="line"><span class="params">				      <span class="type">int</span> endpoint,</span></span><br><span class="line"><span class="params">				      <span class="type">int</span> dir, <span class="type">void</span> *ctx, <span class="type">char</span> *buf, <span class="type">int</span> len,</span></span><br><span class="line"><span class="params">				      <span class="type">void</span> (*callback) (<span class="keyword">struct</span> urb *))</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">usb_serial</span> *<span class="title">serial</span> =</span> port-&gt;serial;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">usb_wwan_intf_private</span> *<span class="title">intfdata</span> =</span> usb_get_serial_data(serial);</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">urb</span> *<span class="title">urb</span>;</span></span><br><span class="line"></span><br><span class="line">	urb = usb_alloc_urb(<span class="number">0</span>, GFP_KERNEL);	<span class="comment">/* No ISO */</span></span><br><span class="line">	<span class="keyword">if</span> (!urb)</span><br><span class="line">		<span class="keyword">return</span> <span class="literal">NULL</span>;</span><br><span class="line"></span><br><span class="line">	usb_fill_bulk_urb(urb, serial-&gt;dev,</span><br><span class="line">			  usb_sndbulkpipe(serial-&gt;dev, endpoint) | dir,</span><br><span class="line">			  buf, len, callback, ctx);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (intfdata-&gt;use_zlp &amp;&amp; dir == USB_DIR_OUT)</span><br><span class="line">		urb-&gt;transfer_flags |= URB_ZERO_PACKET;</span><br><span class="line"></span><br><span class="line">	</span><br><span class="line"><span class="comment">/******************      modify     *************************/</span></span><br><span class="line">	</span><br><span class="line">	<span class="comment">/*Quectel 2C7C modules: add the zero packet mechanism*/</span></span><br><span class="line">	<span class="keyword">if</span>(dir == USB_DIR_OUT)&#123;</span><br><span class="line">			<span class="class"><span class="keyword">struct</span> <span class="title">usb_device_descriptor</span> *<span class="title">desc</span> =</span> &amp;serial-&gt;dev-&gt;descriptor;</span><br><span class="line">			<span class="keyword">if</span>(desc-&gt;idVendor == cpu_to_le16(<span class="number">0x2c7c</span>))</span><br><span class="line">					urb-&gt;transfer_flags |= URB_ZERO_PACKET;</span><br><span class="line">	&#125;</span><br><span class="line"><span class="comment">/******************      modify     *************************/</span></span><br><span class="line">	</span><br><span class="line">	<span class="keyword">return</span> urb;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20240819123646238.png" alt="image-20240819123646238"></p>
+<h3 id="配置并编译内核"><a href="#配置并编译内核" class="headerlink" title="配置并编译内核"></a>配置并编译内核</h3><p>在下载完内核源码之后，我们可以首先手动编译一次，这样我们后续修改文件再次编译内核的时候速度会更快。</p>
+<p>执行命令按照手动编译步骤进行即可。</p>
+<ul>
+<li>生成config配置文件</li>
+<li>生成menuconfig配置</li>
+<li>生成Image</li>
+<li>编译模块</li>
+</ul>
+<p>在我们配置menuconfig时按照默认配置是可以编译出ko文件的，有时候我们需要编译出特定几个模块，需要在menuconfig中手动进行配置。</p>
+<p><img src="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20240820132308979.png" alt="image-20240820132308979"></p>
+<p>在menuconfig下按下<code>/</code>键为查找(同vim) 比如我们需要如下图所示<code>USB driver for GSM and CDMA modems</code>，我们可以利用vscode查找功能在linux内核源码中查找对应模块。</p>
+<p><img src="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20240820132459718.png" alt="image-20240820132459718"></p>
+<p>如下图为查找到内容，此时我们直接在menuconfig中键入<code>USB_SERIAL_OPTION</code>进行查询即可对其进行操作</p>
+<p><img src="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20240820132704868.png" alt="image-20240820132704868"></p>
+<p>同样，笔者在第一次编译时并未编译出来<code>qcserial.ko</code>文件,我们直接在vscode中暴力搜索qcserial，</p>
+<p><img src="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20240820132946467.png" alt="image-20240820132946467"></p>
+<p>从图中可以看到其对应配置为<code>CONFIG_USB_SERIAL_QUALCOMM</code>，选择它按下M即可将其编译成模块，便于后续移植。</p>
+<p><img src="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20240820133113728.png" alt="image-20240820133113728"></p>
+<p><img src="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20240820133123001.png" alt="image-20240820133123001"></p>
+<p>配置好之后再次从menuconfig后面执行一遍手动编译操作即可</p>
+<h3 id="移植加载内核"><a href="#移植加载内核" class="headerlink" title="移植加载内核"></a>移植加载内核</h3><p>将对应.ko文件复制到内核对应文件夹下使用<code>uname -r</code>查看对应内核版本</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable">$sudo</span> <span class="built_in">cp</span> option.ko /lib/modules/4.9.253-tegra/kernel/drivers/usb/serial</span><br><span class="line"><span class="variable">$sudo</span> <span class="built_in">cp</span> usb_wwan.ko /lib/modules/4.9.253-tegra/kernel/drivers/usb/serial</span><br><span class="line"><span class="variable">$sudo</span> <span class="built_in">cp</span> qcserial.ko /lib/modules/4.9.253-tegra/kernel/drivers/usb/serial</span><br></pre></td></tr></table></figure>
+
+<p>加载模块</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable">$sudo</span> depmod -a</span><br><span class="line"><span class="variable">$sudo</span> reboot</span><br></pre></td></tr></table></figure>
+
+<h3 id="驱动测试"><a href="#驱动测试" class="headerlink" title="驱动测试"></a>驱动测试</h3><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable">$sudo</span> modprobe usbmon    <span class="comment"># 加载usbmon驱动模块</span></span><br><span class="line"><span class="variable">$sudo</span> dmesg <span class="comment">#接入USB设备时输出对应信息</span></span><br><span class="line"><span class="variable">$lsmod</span> <span class="comment">#查看已加载的内核模块</span></span><br><span class="line"><span class="variable">$lsusb</span> <span class="comment">#出现移远4G模块</span></span><br><span class="line"><span class="variable">$nmcli</span> device status <span class="comment">#会出现ttyUSB1和ppp0两个 </span></span><br></pre></td></tr></table></figure>
+
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2024/08/03/%E9%9D%99%E6%80%81IP/" rel="prev" title="静态IP">
+      <i class="fa fa-chevron-left"></i> 静态IP
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2024/08/21/%E6%9C%8D%E5%8A%A1%E5%99%A8%E9%80%9A%E4%BF%A1/" rel="next" title="socket传图">
+      socket传图 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#jetson-linux%E7%BC%96%E8%AF%91%E5%86%85%E6%A0%B8"><span class="nav-number">1.</span> <span class="nav-text">jetson-linux编译内核</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%A1%B6%E5%B1%82%E7%9B%AE%E5%BD%95"><span class="nav-number">1.1.</span> <span class="nav-text">顶层目录</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AE%BE%E7%BD%AE%E7%8E%AF%E5%A2%83%E5%8F%98%E9%87%8F"><span class="nav-number">1.2.</span> <span class="nav-text">设置环境变量</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%89%8B%E5%8A%A8%E7%BC%96%E8%AF%91"><span class="nav-number">1.3.</span> <span class="nav-text">手动编译</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%94%9F%E6%88%90config%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6"><span class="nav-number">1.3.1.</span> <span class="nav-text">生成config配置文件</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%94%9F%E6%88%90menuconfig%E9%85%8D%E7%BD%AE"><span class="nav-number">1.3.2.</span> <span class="nav-text">生成menuconfig配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%94%9F%E6%88%90Image"><span class="nav-number">1.3.3.</span> <span class="nav-text">生成Image</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%94%9F%E6%88%90dtb"><span class="nav-number">1.3.4.</span> <span class="nav-text">生成dtb</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BC%96%E8%AF%91%E6%A8%A1%E5%9D%97"><span class="nav-number">1.3.5.</span> <span class="nav-text">编译模块</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B8%85%E9%99%A4%E6%9E%84%E5%BB%BA"><span class="nav-number">1.3.6.</span> <span class="nav-text">清除构建</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%A7%BB%E6%A4%8D%E7%A7%BB%E8%BF%9C4G%E6%A8%A1%E5%9D%97"><span class="nav-number">1.4.</span> <span class="nav-text">移植移远4G模块</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BF%AE%E6%94%B9%E5%86%85%E6%A0%B8%E6%96%87%E4%BB%B6"><span class="nav-number">1.4.1.</span> <span class="nav-text">修改内核文件</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#option-c"><span class="nav-number">1.4.1.1.</span> <span class="nav-text">option.c</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#usb-wwan-c"><span class="nav-number">1.4.1.2.</span> <span class="nav-text">usb_wwan.c</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%85%8D%E7%BD%AE%E5%B9%B6%E7%BC%96%E8%AF%91%E5%86%85%E6%A0%B8"><span class="nav-number">1.4.2.</span> <span class="nav-text">配置并编译内核</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%A7%BB%E6%A4%8D%E5%8A%A0%E8%BD%BD%E5%86%85%E6%A0%B8"><span class="nav-number">1.4.3.</span> <span class="nav-text">移植加载内核</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%A9%B1%E5%8A%A8%E6%B5%8B%E8%AF%95"><span class="nav-number">1.4.4.</span> <span class="nav-text">驱动测试</span></a></li></ol></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">ADonkey</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">6</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2024</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">ADonkey</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>
