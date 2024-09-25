@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="CSAPP第一章程序运行流程：首先我们按下.&#x2F;hello ，字符串从键盘被读取 shell会将读取到的字符串逐一加载到寄存器，处理器会把hello字符串放到内存中。（注意此处不可以DMA直接读取到内存，内存只是存储空间，不放在寄存器里面program count无法指向程序）按下回车键，指令结束，shell会通过一系列指令加载可执行文件hello。这些指令会将hello中的数据和指令从磁">
+<meta property="og:type" content="article">
+<meta property="og:title" content="csapp学习笔记">
+<meta property="og:url" content="http://example.com/2024/09/08/csapp%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/index.html">
+<meta property="og:site_name" content="凌云苑">
+<meta property="og:description" content="CSAPP第一章程序运行流程：首先我们按下.&#x2F;hello ，字符串从键盘被读取 shell会将读取到的字符串逐一加载到寄存器，处理器会把hello字符串放到内存中。（注意此处不可以DMA直接读取到内存，内存只是存储空间，不放在寄存器里面program count无法指向程序）按下回车键，指令结束，shell会通过一系列指令加载可执行文件hello。这些指令会将hello中的数据和指令从磁">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20240701095309869.png">
+<meta property="og:image" content="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20240701095600280.png">
+<meta property="og:image" content="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20240702105444786.png">
+<meta property="og:image" content="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20240702111734630.png">
+<meta property="og:image" content="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20240702105905118.png">
+<meta property="og:image" content="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20240702110710375.png">
+<meta property="og:image" content="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20240702111326538.png">
+<meta property="og:image" content="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20240702111503634.png">
+<meta property="og:image" content="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20240702111802383.png">
+<meta property="og:image" content="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20240702111905488.png">
+<meta property="og:image" content="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20240702112016418.png">
+<meta property="og:image" content="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20240702112105886.png">
+<meta property="og:image" content="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20240704100006629.png">
+<meta property="og:image" content="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20240704100206456.png">
+<meta property="og:image" content="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20240704100617873.png">
+<meta property="og:image" content="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20240716155215275.png">
+<meta property="og:image" content="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20240716160847167.png">
+<meta property="og:image" content="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20240716161547701.png">
+<meta property="og:image" content="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20240716161623476.png">
+<meta property="og:image" content="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20240716161706090.png">
+<meta property="og:image" content="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20240716161738855.png">
+<meta property="og:image" content="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20240716161431728.png">
+<meta property="og:image" content="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20240716163831757.png">
+<meta property="og:image" content="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20240716165402940.png">
+<meta property="og:image" content="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20240716165824328.png">
+<meta property="og:image" content="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20240716170116721.png">
+<meta property="og:image" content="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20240716175926183.png">
+<meta property="og:image" content="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20240716175215470.png">
+<meta property="og:image" content="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20240716180332384.png">
+<meta property="og:image" content="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20240716180809606.png">
+<meta property="og:image" content="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20240716181450431.png">
+<meta property="article:published_time" content="2024-09-08T02:32:39.365Z">
+<meta property="article:modified_time" content="2024-09-08T02:34:07.676Z">
+<meta property="article:author" content="ADonkey">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20240701095309869.png">
+
+<link rel="canonical" href="http://example.com/2024/09/08/csapp%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>csapp学习笔记 | 凌云苑</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">凌云苑</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2024/09/08/csapp%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="ADonkey">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="凌云苑">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          csapp学习笔记
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2024-09-08 10:32:39 / 修改时间：10:34:07" itemprop="dateCreated datePublished" datetime="2024-09-08T10:32:39+08:00">2024-09-08</time>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>1.3k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>1 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="CSAPP"><a href="#CSAPP" class="headerlink" title="CSAPP"></a>CSAPP</h2><h3 id="第一章"><a href="#第一章" class="headerlink" title="第一章"></a>第一章</h3><p>程序运行流程：<br>首先我们按下.&#x2F;hello ，字符串从键盘被读取 shell会将读取到的字符串逐一加载到寄存器，处理器会把hello字符串放到内存中。（注意此处不可以DMA直接读取到内存，内存只是存储空间，不放在寄存器里面program count无法指向程序）按下回车键，指令结束，shell会通过一系列指令加载可执行文件hello。这些指令会将hello中的数据和指令从磁盘督导内存而不经过CPU，这既是DMA技术。当hello中的数据和指令到达内存时，处理器就开始执行指令。CPU会将hello world\n 这个字符串复制到寄存器文件，然后再从寄存器文件复制到显示设备。</p>
+<p><img src="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20240701095309869.png" alt="image-20240701095309869"></p>
+<p><img src="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20240701095600280.png" alt="image-20240701095600280"></p>
+<p><img src="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20240702105444786.png" alt="image-20240702105444786"></p>
+<p><img src="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20240702111734630.png" alt="image-20240702111734630"></p>
+<p><img src="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20240702105905118.png" alt="image-20240702105905118"></p>
+<p><img src="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20240702110710375.png" alt="image-20240702110710375"></p>
+<p><img src="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20240702111326538.png" alt="image-20240702111326538"></p>
+<p><img src="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20240702111503634.png" alt="image-20240702111503634"></p>
+<p><img src="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20240702111802383.png" alt="image-20240702111802383"></p>
+<p><img src="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20240702111905488.png" alt="image-20240702111905488"></p>
+<p><img src="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20240702112016418.png" alt="image-20240702112016418"></p>
+<p><img src="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20240702112105886.png" alt="image-20240702112105886"></p>
+<h3 id="第二章-信息的表示和存储"><a href="#第二章-信息的表示和存储" class="headerlink" title="第二章 信息的表示和存储"></a>第二章 信息的表示和存储</h3><h4 id="2-1-信息存储"><a href="#2-1-信息存储" class="headerlink" title="2.1 信息存储"></a>2.1 信息存储</h4><p>gcc -m32 -o hello32 hello.c #编译32位程序<br>gcc -m64 -o hello64 hello.c #编译64位程序<br>if(a &amp;&amp; 5&#x2F;a) &#x2F;&#x2F;先判断a是否为0 如果是0，则不再执行后续</p>
+<p><img src="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20240704100006629.png" alt="image-20240704100006629"><img src="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20240704100206456.png" alt="image-20240704100206456"></p>
+<p>算术右移与逻辑右移不同之处：算术右移操作数最高位为1时，左端补1 逻辑右移直接补0<br>一般有符号数算术右移 无符号数逻辑右移</p>
+<p><img src="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20240704100617873.png" alt="image-20240704100617873"></p>
+<h4 id="2-2-整数的表示"><a href="#2-2-整数的表示" class="headerlink" title="2.2 整数的表示"></a>2.2 整数的表示</h4><p>二进制补码 <strong>补码是首位是1则为负，首位为0即是正数</strong></p>
+<ul>
+<li>正数的补码与原码相同。</li>
+<li>负数的补码是对原码（符号位除外）按位取反后加1得到的。</li>
+</ul>
+<p><img src="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20240716155215275.png" alt="image-20240716155215275"></p>
+<p><img src="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20240716160847167.png" alt="image-20240716160847167"></p>
+<p><img src="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20240716161547701.png" alt="image-20240716161547701"></p>
+<p><img src="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20240716161623476.png" alt="image-20240716161033328"></p>
+<p><img src="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20240716161706090.png" alt="image-20240716161706090"></p>
+<p><img src="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20240716161738855.png" alt="image-20240716161738855"></p>
+<p><img src="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20240716161431728.png" alt="image-20240716161431728"></p>
+<h4 id="2-3-整数的运算-remain"><a href="#2-3-整数的运算-remain" class="headerlink" title="2.3 整数的运算-remain"></a>2.3 整数的运算-remain</h4><p>正溢出实际上是一种假溢出，因为没有舍弃位，而是最高位由0变为1，产生了负权重<br>负溢出是真正意义的溢出，最高位产生溢出，而被丢弃，使得负权重丢失，让结果变为正数</p>
+<p><img src="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20240716163831757.png" alt="image-20240716163831757"></p>
+<p><img src="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20240716165402940.png" alt="image-20240716165402940"></p>
+<p>加入偏置后再右移 偏置为（(1&lt;&lt;k )-1）接口得到向0舍入的结果</p>
+<p><img src="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20240716165824328.png" alt="image-20240716165824328"></p>
+<p><img src="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20240716170116721.png" alt="image-20240716170116721"></p>
+<h4 id="2-4-浮点数"><a href="#2-4-浮点数" class="headerlink" title="2.4 浮点数"></a>2.4 浮点数</h4><p><img src="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20240716175926183.png" alt="image-20240716175926183"></p>
+<p><img src="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20240716175215470.png" alt="image-20240716175215470"></p>
+<p>阶码（Exponent）</p>
+<p>阶码用于表示浮点数中指数部分的值。它决定了尾数的小数点应该向左或向右移动多少位，从而表示出不同的数值范围。在IEEE 754标准中，阶码通常采用偏移（或称为偏置）的方式来表示，这是为了使得所有的指数都有一个正的表示，包括负数。偏移值通常是2<em>e</em>−1−1，其中<em>e</em>是阶码的位数。</p>
+<p>例如，在一个单精度浮点数（32位）中，阶码占据了其中的8位（包括一个符号位），因此偏移值为27−1&#x3D;127。如果一个单精度浮点数的阶码字段为128（二进制为10000000），那么实际的指数值为128−127&#x3D;1，表示小数点向右移动1位。</p>
+<p>尾数（Mantissa 或 Significand）</p>
+<p>尾数（或称为有效数字）是浮点数中表示数值精度（或大小）的部分。它紧跟在阶码之后，包含了浮点数中除去隐含的整数位（在IEEE 754标准中，对于非零的规格化浮点数，尾数前会隐含一个1，这个1不会存储在尾数字段中）之外的所有位。尾数可以是整数也可以是分数，但在计算机中，它们通常以二进制形式存储。</p>
+<p>在IEEE 754标准中，尾数部分还包括了一个隐含的二进制点，这意味着尾数实际上是一个二进制小数，而不仅仅是整数或二进制数的集合。这种设计允许浮点数以更高的精度来表示小数。</p>
+<p><img src="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20240716180332384.png" alt="image-20240716180332384"></p>
+<p><img src="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20240716180809606.png" alt="image-20240716180809606">   </p>
+<p>浮点数结果不具有整数相关性<img src="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20240716181450431.png" alt="image-20240716181450431"></p>
+<h3 id="第三章-程序的机器级表示"><a href="#第三章-程序的机器级表示" class="headerlink" title="第三章 程序的机器级表示"></a>第三章 程序的机器级表示</h3>
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2024/08/28/socket%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B/" rel="prev" title="socket网络编程">
+      <i class="fa fa-chevron-left"></i> socket网络编程
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2024/09/25/freetype%E7%A7%BB%E6%A4%8D/" rel="next" title="freetype移植问题处理">
+      freetype移植问题处理 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#CSAPP"><span class="nav-number">1.</span> <span class="nav-text">CSAPP</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%AC%AC%E4%B8%80%E7%AB%A0"><span class="nav-number">1.1.</span> <span class="nav-text">第一章</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%AC%AC%E4%BA%8C%E7%AB%A0-%E4%BF%A1%E6%81%AF%E7%9A%84%E8%A1%A8%E7%A4%BA%E5%92%8C%E5%AD%98%E5%82%A8"><span class="nav-number">1.2.</span> <span class="nav-text">第二章 信息的表示和存储</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#2-1-%E4%BF%A1%E6%81%AF%E5%AD%98%E5%82%A8"><span class="nav-number">1.2.1.</span> <span class="nav-text">2.1 信息存储</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-2-%E6%95%B4%E6%95%B0%E7%9A%84%E8%A1%A8%E7%A4%BA"><span class="nav-number">1.2.2.</span> <span class="nav-text">2.2 整数的表示</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-3-%E6%95%B4%E6%95%B0%E7%9A%84%E8%BF%90%E7%AE%97-remain"><span class="nav-number">1.2.3.</span> <span class="nav-text">2.3 整数的运算-remain</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-4-%E6%B5%AE%E7%82%B9%E6%95%B0"><span class="nav-number">1.2.4.</span> <span class="nav-text">2.4 浮点数</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%AC%AC%E4%B8%89%E7%AB%A0-%E7%A8%8B%E5%BA%8F%E7%9A%84%E6%9C%BA%E5%99%A8%E7%BA%A7%E8%A1%A8%E7%A4%BA"><span class="nav-number">1.3.</span> <span class="nav-text">第三章 程序的机器级表示</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">ADonkey</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">8</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2024</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">ADonkey</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+    <span title="站点总字数">26k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    <span title="站点阅读时长">24 分钟</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

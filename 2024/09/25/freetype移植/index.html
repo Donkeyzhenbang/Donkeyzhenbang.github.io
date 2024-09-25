@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="freetype移植类型匹配12CvScalar s &#x3D; &#123;0, 255, 0&#125;; &#x2F;&#x2F;!这里有一个类型不匹配问题：cv::Scalar 不能隐式转换为 CvScalar。text.putText(img, msg, pos, s); &#x2F;&#x2F; 绘制文本 中文字体使用宽字符1const wchar_t *msg &#x3D; L&quot;偏振图像&quot;; &#x2F;&#x2F; 使用宽字符 CvxTe">
+<meta property="og:type" content="article">
+<meta property="og:title" content="freetype移植问题处理">
+<meta property="og:url" content="http://example.com/2024/09/25/freetype%E7%A7%BB%E6%A4%8D/index.html">
+<meta property="og:site_name" content="凌云苑">
+<meta property="og:description" content="freetype移植类型匹配12CvScalar s &#x3D; &#123;0, 255, 0&#125;; &#x2F;&#x2F;!这里有一个类型不匹配问题：cv::Scalar 不能隐式转换为 CvScalar。text.putText(img, msg, pos, s); &#x2F;&#x2F; 绘制文本 中文字体使用宽字符1const wchar_t *msg &#x3D; L&quot;偏振图像&quot;; &#x2F;&#x2F; 使用宽字符 CvxTe">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2024-09-25T13:32:58.943Z">
+<meta property="article:modified_time" content="2024-09-25T14:43:05.126Z">
+<meta property="article:author" content="ADonkey">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://example.com/2024/09/25/freetype%E7%A7%BB%E6%A4%8D/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>freetype移植问题处理 | 凌云苑</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">凌云苑</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2024/09/25/freetype%E7%A7%BB%E6%A4%8D/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="ADonkey">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="凌云苑">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          freetype移植问题处理
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2024-09-25 21:32:58 / 修改时间：22:43:05" itemprop="dateCreated datePublished" datetime="2024-09-25T21:32:58+08:00">2024-09-25</time>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>8.4k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>8 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h3 id="freetype移植"><a href="#freetype移植" class="headerlink" title="freetype移植"></a>freetype移植</h3><h4 id="类型匹配"><a href="#类型匹配" class="headerlink" title="类型匹配"></a>类型匹配</h4><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">CvScalar s = &#123;<span class="number">0</span>, <span class="number">255</span>, <span class="number">0</span>&#125;; <span class="comment">//!这里有一个类型不匹配问题：cv::Scalar 不能隐式转换为 CvScalar。</span></span><br><span class="line">text.<span class="built_in">putText</span>(img, msg, pos, s); <span class="comment">// 绘制文本</span></span><br></pre></td></tr></table></figure>
+<h4 id="中文字体使用宽字符"><a href="#中文字体使用宽字符" class="headerlink" title="中文字体使用宽字符"></a>中文字体使用宽字符</h4><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">const</span> <span class="type">wchar_t</span> *msg = <span class="string">L&quot;偏振图像&quot;</span>; <span class="comment">// 使用宽字符</span></span><br></pre></td></tr></table></figure>
+<h4 id="CvxText"><a href="#CvxText" class="headerlink" title="CvxText"></a>CvxText</h4><ul>
+<li>参考源码地址<a target="_blank" rel="noopener" href="https://bigbookplus.github.io/blog/2022-06-15-cvxtext-opencv45.html">OpenCV 4.X 使用CvxText在图片显示汉字 | Learning BigBook (bigbookplus.github.io)</a></li>
+<li>注意linux引用opencv 使用&#x2F; 而在Windows使用\</li>
+<li>这份源文件有问题，如下图，注意临时对象不能右值引用，Visual Studio中会将其延长生命周期 linux-g++编译不会优化编译<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">void</span> <span class="title">CvxText::putWChar</span><span class="params">(cv::Mat &amp;frame, <span class="type">wchar_t</span> wc, CvPoint &amp;pos, CvScalar color)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="comment">// IplImage* img = NULL;</span></span><br><span class="line">    <span class="comment">// img = &amp;(cvIplImage(frame));</span></span><br><span class="line">    <span class="comment">//!临时对象非const不能右值引用</span></span><br><span class="line">    IplImage temp_img = <span class="built_in">cvIplImage</span>(frame);  <span class="comment">// 创建IplImage的副本</span></span><br><span class="line">    IplImage* img = &amp;temp_img;              <span class="comment">// 取得指针</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
+</ul>
+<h4 id="Makefile"><a href="#Makefile" class="headerlink" title="Makefile"></a>Makefile</h4><ul>
+<li>只需要freetype2.pc </li>
+<li>注意看系统中是否有freetype的动态库 避免多个库复用导致vim出现问题 我的Ubuntu使用的freetype动态链接库版本是libfreetype.so.6.17.1</li>
+<li>之前在Makefile中必须要加上<code>LDFLAGS += -L/usr/lib/x86_64-linux-gnu/</code>这句话是因为在移植freetype时执行sudo make install所以将另一个版本的pc文件或者动态&#x2F;静态库安装在&#x2F;usr&#x2F;local&#x2F;lib中 删除即可</li>
+</ul>
+<h4 id="msyh-ttf"><a href="#msyh-ttf" class="headerlink" title="msyh.ttf"></a>msyh.ttf</h4><ul>
+<li>微软雅黑字体msyh.ttf需放到运行目录下</li>
+</ul>
+<h4 id="CvxText-cpp"><a href="#CvxText-cpp" class="headerlink" title="CvxText.cpp"></a>CvxText.cpp</h4><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br><span class="line">169</span><br><span class="line">170</span><br><span class="line">171</span><br><span class="line">172</span><br><span class="line">173</span><br><span class="line">174</span><br><span class="line">175</span><br><span class="line">176</span><br><span class="line">177</span><br><span class="line">178</span><br><span class="line">179</span><br><span class="line">180</span><br><span class="line">181</span><br><span class="line">182</span><br><span class="line">183</span><br><span class="line">184</span><br><span class="line">185</span><br><span class="line">186</span><br><span class="line">187</span><br><span class="line">188</span><br><span class="line">189</span><br><span class="line">190</span><br><span class="line">191</span><br><span class="line">192</span><br><span class="line">193</span><br><span class="line">194</span><br><span class="line">195</span><br><span class="line">196</span><br><span class="line">197</span><br><span class="line">198</span><br><span class="line">199</span><br><span class="line">200</span><br><span class="line">201</span><br><span class="line">202</span><br><span class="line">203</span><br><span class="line">204</span><br><span class="line">205</span><br><span class="line">206</span><br><span class="line">207</span><br><span class="line">208</span><br><span class="line">209</span><br><span class="line">210</span><br><span class="line">211</span><br><span class="line">212</span><br><span class="line">213</span><br><span class="line">214</span><br><span class="line">215</span><br><span class="line">216</span><br><span class="line">217</span><br><span class="line">218</span><br><span class="line">219</span><br><span class="line">220</span><br><span class="line">221</span><br><span class="line">222</span><br><span class="line">223</span><br><span class="line">224</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&quot;CvxText.h&quot;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;wchar.h&gt;</span>  </span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;assert.h&gt;</span>  </span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;locale.h&gt;</span>  </span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;ctype.h&gt;</span> </span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&quot;opencv2/core/core.hpp&quot;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&quot;opencv2/highgui/highgui.hpp&quot;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&quot;opencv2/imgproc/imgproc.hpp&quot;</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> cv;</span><br><span class="line"></span><br><span class="line">CvxText::<span class="built_in">CvxText</span>(<span class="type">const</span> <span class="type">char</span> *freeType)</span><br><span class="line">&#123;</span><br><span class="line">	<span class="built_in">assert</span>(freeType != <span class="literal">NULL</span>);</span><br><span class="line"></span><br><span class="line">	<span class="comment">// ���ֿ��ļ�, ����һ������  </span></span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (<span class="built_in">FT_Init_FreeType</span>(&amp;m_library)) <span class="keyword">throw</span>;</span><br><span class="line">	<span class="type">int</span> result = <span class="number">100</span>;</span><br><span class="line">	<span class="comment">//result = FT_New_Face(m_library, freeType, 0, &amp;m_face);</span></span><br><span class="line">	<span class="keyword">if</span> (result = <span class="built_in">FT_New_Face</span>(m_library, freeType, <span class="number">0</span>, &amp;m_face)) <span class="keyword">throw</span>;</span><br><span class="line">	</span><br><span class="line"></span><br><span class="line">	<span class="comment">// ���������������  </span></span><br><span class="line"></span><br><span class="line">	<span class="built_in">restoreFont</span>();</span><br><span class="line"></span><br><span class="line">	<span class="comment">// ����C���Ե��ַ�������  </span></span><br><span class="line"></span><br><span class="line">	<span class="built_in">setlocale</span>(LC_ALL, <span class="string">&quot;&quot;</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// �ͷ�FreeType��Դ  </span></span><br><span class="line"></span><br><span class="line">CvxText::~<span class="built_in">CvxText</span>()</span><br><span class="line">&#123;</span><br><span class="line">	<span class="built_in">FT_Done_Face</span>(m_face);</span><br><span class="line">	<span class="built_in">FT_Done_FreeType</span>(m_library);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// �����������:  </span></span><br><span class="line"><span class="comment">//  </span></span><br><span class="line"><span class="comment">// font         - ��������, Ŀǰ��֧��  </span></span><br><span class="line"><span class="comment">// size         - �����С/�հױ���/�������/��ת�Ƕ�  </span></span><br><span class="line"><span class="comment">// underline   - �»���  </span></span><br><span class="line"><span class="comment">// diaphaneity   - ͸����  </span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">CvxText::getFont</span><span class="params">(<span class="type">int</span> *type, CvScalar *size, <span class="type">bool</span> *underline, <span class="type">float</span> *diaphaneity)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="keyword">if</span> (type) *type = m_fontType;</span><br><span class="line">	<span class="keyword">if</span> (size) *size = m_fontSize;</span><br><span class="line">	<span class="keyword">if</span> (underline) *underline = m_fontUnderline;</span><br><span class="line">	<span class="keyword">if</span> (diaphaneity) *diaphaneity = m_fontDiaphaneity;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">CvxText::setFont</span><span class="params">(<span class="type">int</span> *type, CvScalar *size, <span class="type">bool</span> *underline, <span class="type">float</span> *diaphaneity)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="comment">// �����Ϸ��Լ��  </span></span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (type)</span><br><span class="line">	&#123;</span><br><span class="line">		<span class="keyword">if</span> (type &gt;= <span class="number">0</span>) m_fontType = *type;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">if</span> (size)</span><br><span class="line">	&#123;</span><br><span class="line">		m_fontSize.val[<span class="number">0</span>] = <span class="built_in">fabs</span>(size-&gt;val[<span class="number">0</span>]);</span><br><span class="line">		m_fontSize.val[<span class="number">1</span>] = <span class="built_in">fabs</span>(size-&gt;val[<span class="number">1</span>]);</span><br><span class="line">		m_fontSize.val[<span class="number">2</span>] = <span class="built_in">fabs</span>(size-&gt;val[<span class="number">2</span>]);</span><br><span class="line">		m_fontSize.val[<span class="number">3</span>] = <span class="built_in">fabs</span>(size-&gt;val[<span class="number">3</span>]);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">if</span> (underline)</span><br><span class="line">	&#123;</span><br><span class="line">		m_fontUnderline = *underline;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">if</span> (diaphaneity)</span><br><span class="line">	&#123;</span><br><span class="line">		m_fontDiaphaneity = *diaphaneity;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// �ָ�ԭʼ����������  </span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">CvxText::restoreFont</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	m_fontType = <span class="number">0</span>;            <span class="comment">// ��������(��֧��)  </span></span><br><span class="line"></span><br><span class="line">	m_fontSize.val[<span class="number">0</span>] = <span class="number">40</span>;      <span class="comment">// �����С  </span></span><br><span class="line">	m_fontSize.val[<span class="number">1</span>] = <span class="number">0.5</span>;   <span class="comment">// �հ��ַ���С����  </span></span><br><span class="line">	m_fontSize.val[<span class="number">2</span>] = <span class="number">0.1</span>;   <span class="comment">// �����С����  </span></span><br><span class="line">	m_fontSize.val[<span class="number">3</span>] = <span class="number">0</span>;      <span class="comment">// ��ת�Ƕ�(��֧��)  </span></span><br><span class="line"></span><br><span class="line">	m_fontUnderline = <span class="literal">false</span>;   <span class="comment">// �»���(��֧��)  </span></span><br><span class="line"></span><br><span class="line">	m_fontDiaphaneity = <span class="number">1.0</span>;   <span class="comment">// ɫ�ʱ���(�ɲ���͸��Ч��)  </span></span><br><span class="line"></span><br><span class="line">	<span class="comment">// �����ַ���С  </span></span><br><span class="line"></span><br><span class="line">	<span class="built_in">FT_Set_Pixel_Sizes</span>(m_face, (<span class="type">int</span>)m_fontSize.val[<span class="number">0</span>], <span class="number">0</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// �������(��ɫĬ��Ϊ��ɫ)  </span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">CvxText::putText</span><span class="params">(cv::Mat &amp;frame, <span class="type">const</span> <span class="type">char</span>    *text, CvPoint pos)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="comment">//return putText(frame, text, pos, CV_RGB(255, 255, 255));</span></span><br><span class="line">	CvScalar s = &#123;<span class="number">255</span>, <span class="number">255</span>, <span class="number">255</span>&#125;;</span><br><span class="line">	<span class="keyword">return</span> <span class="built_in">putText</span>(frame, text, pos, s);</span><br><span class="line">&#125;</span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">CvxText::putText</span><span class="params">(cv::Mat &amp;frame, <span class="type">const</span> <span class="type">wchar_t</span> *text, CvPoint pos)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="comment">//return putText(frame, text, pos, CV_RGB(255, 255, 255));</span></span><br><span class="line">	CvScalar s = &#123;<span class="number">255</span>, <span class="number">255</span>, <span class="number">255</span>&#125;;</span><br><span class="line">	<span class="keyword">return</span> <span class="built_in">putText</span>(frame, text, pos, s);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//  </span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">CvxText::putText</span><span class="params">(cv::Mat &amp;frame, <span class="type">const</span> <span class="type">char</span>    *text, CvPoint pos, CvScalar color)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="keyword">if</span> (frame.<span class="built_in">empty</span>()) <span class="keyword">return</span> <span class="number">-1</span>;</span><br><span class="line">	<span class="keyword">if</span> (text == <span class="literal">NULL</span>) <span class="keyword">return</span> <span class="number">-1</span>;</span><br><span class="line"></span><br><span class="line">	<span class="comment">//  </span></span><br><span class="line"></span><br><span class="line">	<span class="type">int</span> i;</span><br><span class="line">	<span class="keyword">for</span> (i = <span class="number">0</span>; text[i] != <span class="string">&#x27;\0&#x27;</span>; ++i)</span><br><span class="line">	&#123;</span><br><span class="line">		<span class="type">wchar_t</span> wc = text[i];</span><br><span class="line"></span><br><span class="line">		<span class="comment">// ����˫�ֽڷ���  </span></span><br><span class="line"></span><br><span class="line">		<span class="keyword">if</span> (!<span class="built_in">isascii</span>(wc)) <span class="built_in">mbtowc</span>(&amp;wc, &amp;text[i++], <span class="number">2</span>);</span><br><span class="line"></span><br><span class="line">		<span class="comment">// �����ǰ���ַ�  </span></span><br><span class="line"></span><br><span class="line">		<span class="built_in">putWChar</span>(frame, wc, pos, color);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> i;</span><br><span class="line">&#125;</span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">CvxText::putText</span><span class="params">(cv::Mat &amp;frame, <span class="type">const</span> <span class="type">wchar_t</span> *text, CvPoint pos, CvScalar color)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="keyword">if</span> (frame.<span class="built_in">empty</span>()) <span class="keyword">return</span> <span class="number">-1</span>;</span><br><span class="line">	<span class="keyword">if</span> (text == <span class="literal">NULL</span>) <span class="keyword">return</span> <span class="number">-1</span>;</span><br><span class="line"></span><br><span class="line">	<span class="comment">//  </span></span><br><span class="line"></span><br><span class="line">	<span class="type">int</span> i;</span><br><span class="line">	<span class="keyword">for</span> (i = <span class="number">0</span>; text[i] != <span class="string">&#x27;\0&#x27;</span>; ++i)</span><br><span class="line">	&#123;</span><br><span class="line">		<span class="comment">// �����ǰ���ַ�  </span></span><br><span class="line"></span><br><span class="line">		<span class="built_in">putWChar</span>(frame, text[i], pos, color);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> i;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// �����ǰ�ַ�, ����m_posλ��  </span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">CvxText::putWChar</span><span class="params">(cv::Mat &amp;frame, <span class="type">wchar_t</span> wc, CvPoint &amp;pos, CvScalar color)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="comment">// IplImage* img = NULL;</span></span><br><span class="line">	<span class="comment">// img = &amp;(cvIplImage(frame));</span></span><br><span class="line">	<span class="comment">//!临时对象非const不能右值引用</span></span><br><span class="line">	IplImage temp_img = <span class="built_in">cvIplImage</span>(frame);  <span class="comment">// 创建IplImage的副本</span></span><br><span class="line">    IplImage* img = &amp;temp_img;              <span class="comment">// 取得指针</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">// ����unicode��������Ķ�ֵλͼ  </span></span><br><span class="line"></span><br><span class="line">	FT_UInt glyph_index = <span class="built_in">FT_Get_Char_Index</span>(m_face, wc);</span><br><span class="line">	<span class="built_in">FT_Load_Glyph</span>(m_face, glyph_index, FT_LOAD_DEFAULT);</span><br><span class="line">	<span class="built_in">FT_Render_Glyph</span>(m_face-&gt;glyph, FT_RENDER_MODE_MONO);</span><br><span class="line"></span><br><span class="line">	<span class="comment">//  </span></span><br><span class="line"></span><br><span class="line">	FT_GlyphSlot slot = m_face-&gt;glyph;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// ������  </span></span><br><span class="line"></span><br><span class="line">	<span class="type">int</span> rows = slot-&gt;bitmap.rows;</span><br><span class="line">	<span class="type">int</span> cols = slot-&gt;bitmap.width;</span><br><span class="line"></span><br><span class="line">	<span class="comment">//  </span></span><br><span class="line"></span><br><span class="line">	<span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; rows; ++i)</span><br><span class="line">	&#123;</span><br><span class="line">		<span class="keyword">for</span> (<span class="type">int</span> j = <span class="number">0</span>; j &lt; cols; ++j)</span><br><span class="line">		&#123;</span><br><span class="line">			<span class="type">int</span> off = ((img-&gt;origin == <span class="number">0</span>) ? i : (rows - <span class="number">1</span> - i))</span><br><span class="line">				* slot-&gt;bitmap.pitch + j / <span class="number">8</span>;</span><br><span class="line"></span><br><span class="line">			<span class="keyword">if</span> (slot-&gt;bitmap.buffer[off] &amp; (<span class="number">0xC0</span> &gt;&gt; (j % <span class="number">8</span>)))</span><br><span class="line">			&#123;</span><br><span class="line">				<span class="type">int</span> r = (img-&gt;origin == <span class="number">0</span>) ? pos.y - (rows - <span class="number">1</span> - i) : pos.y + i;;</span><br><span class="line">				<span class="type">int</span> c = pos.x + j;</span><br><span class="line"></span><br><span class="line">				<span class="keyword">if</span> (r &gt;= <span class="number">0</span> &amp;&amp; r &lt; img-&gt;height</span><br><span class="line">					&amp;&amp; c &gt;= <span class="number">0</span> &amp;&amp; c &lt; img-&gt;width)</span><br><span class="line">				&#123;</span><br><span class="line">					CvScalar scalar = <span class="built_in">cvGet2D</span>(img, r, c);</span><br><span class="line"></span><br><span class="line">					<span class="comment">// ����ɫ���ں�  </span></span><br><span class="line"></span><br><span class="line">					<span class="type">float</span> p = m_fontDiaphaneity;</span><br><span class="line">					<span class="keyword">for</span> (<span class="type">int</span> k = <span class="number">0</span>; k &lt; <span class="number">4</span>; ++k)</span><br><span class="line">					&#123;</span><br><span class="line">						scalar.val[k] = scalar.val[k] * (<span class="number">1</span> - p) + color.val[k] * p;</span><br><span class="line">					&#125;</span><br><span class="line"></span><br><span class="line">					<span class="built_in">cvSet2D</span>(img, r, c, scalar);</span><br><span class="line">				&#125;</span><br><span class="line">			&#125;</span><br><span class="line">		&#125; <span class="comment">// end for  </span></span><br><span class="line">	&#125; <span class="comment">// end for  </span></span><br><span class="line"></span><br><span class="line">	<span class="comment">// �޸���һ���ֵ����λ��  </span></span><br><span class="line"></span><br><span class="line">	<span class="type">double</span> space = m_fontSize.val[<span class="number">0</span>] * m_fontSize.val[<span class="number">1</span>];</span><br><span class="line">	<span class="type">double</span> sep = m_fontSize.val[<span class="number">0</span>] * m_fontSize.val[<span class="number">2</span>];</span><br><span class="line"></span><br><span class="line">	pos.x += (<span class="type">int</span>)((cols ? cols : space) + sep);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+
+
+<h4 id="CvxText-h"><a href="#CvxText-h" class="headerlink" title="CvxText.h"></a>CvxText.h</h4><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">ifndef</span> CVX_TEXT_H</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> CVX_TEXT_H</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;ft2build.h&gt;</span>  </span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> FT_FREETYPE_H  </span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&quot;opencv2/core/core.hpp&quot;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&quot;opencv2/core/core_c.h&quot;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&quot;opencv2/highgui/highgui.hpp&quot;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&quot;opencv2/imgproc/imgproc.hpp&quot;</span></span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">CvxText</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="comment">// ��ֹcopy  </span></span><br><span class="line">	CvxText&amp; <span class="keyword">operator</span>=(<span class="type">const</span> CvxText&amp;);</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">	<span class="built_in">CvxText</span>(<span class="type">const</span> <span class="type">char</span> *freeType);</span><br><span class="line">	<span class="keyword">virtual</span> ~<span class="built_in">CvxText</span>();</span><br><span class="line"></span><br><span class="line">	<span class="comment">/**</span></span><br><span class="line"><span class="comment">	* ��ȡ���塣Ŀǰ��Щ�����в�֧�֡�</span></span><br><span class="line"><span class="comment">	*</span></span><br><span class="line"><span class="comment">	* \param font        ��������, Ŀǰ��֧��</span></span><br><span class="line"><span class="comment">	* \param size        �����С/�հױ���/�������/��ת�Ƕ�</span></span><br><span class="line"><span class="comment">	* \param underline   �»���</span></span><br><span class="line"><span class="comment">	* \param diaphaneity ͸����</span></span><br><span class="line"><span class="comment">	*</span></span><br><span class="line"><span class="comment">	* \sa setFont, restoreFont</span></span><br><span class="line"><span class="comment">	*/</span></span><br><span class="line"></span><br><span class="line">	<span class="function"><span class="type">void</span> <span class="title">getFont</span><span class="params">(<span class="type">int</span> *type,</span></span></span><br><span class="line"><span class="params"><span class="function">		CvScalar *size = <span class="literal">NULL</span>, <span class="type">bool</span> *underline = <span class="literal">NULL</span>, <span class="type">float</span> *diaphaneity = <span class="literal">NULL</span>)</span></span>;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/**</span></span><br><span class="line"><span class="comment">	* �������塣Ŀǰ��Щ�����в�֧�֡�</span></span><br><span class="line"><span class="comment">	*</span></span><br><span class="line"><span class="comment">	* \param font        ��������, Ŀǰ��֧��</span></span><br><span class="line"><span class="comment">	* \param size        �����С/�հױ���/�������/��ת�Ƕ�</span></span><br><span class="line"><span class="comment">	* \param underline   �»���</span></span><br><span class="line"><span class="comment">	* \param diaphaneity ͸����</span></span><br><span class="line"><span class="comment">	*</span></span><br><span class="line"><span class="comment">	* \sa getFont, restoreFont</span></span><br><span class="line"><span class="comment">	*/</span></span><br><span class="line"></span><br><span class="line">	<span class="function"><span class="type">void</span> <span class="title">setFont</span><span class="params">(<span class="type">int</span> *type,</span></span></span><br><span class="line"><span class="params"><span class="function">		CvScalar *size = <span class="literal">NULL</span>, <span class="type">bool</span> *underline = <span class="literal">NULL</span>, <span class="type">float</span> *diaphaneity = <span class="literal">NULL</span>)</span></span>;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/**</span></span><br><span class="line"><span class="comment">	* �ָ�ԭʼ���������á�</span></span><br><span class="line"><span class="comment">	*</span></span><br><span class="line"><span class="comment">	* \sa getFont, setFont</span></span><br><span class="line"><span class="comment">	*/</span></span><br><span class="line"></span><br><span class="line">	<span class="function"><span class="type">void</span> <span class="title">restoreFont</span><span class="params">()</span></span>;</span><br><span class="line"></span><br><span class="line">	<span class="comment">//================================================================  </span></span><br><span class="line">	<span class="comment">//================================================================  </span></span><br><span class="line"></span><br><span class="line">	<span class="comment">/**</span></span><br><span class="line"><span class="comment">	* �������(��ɫĬ��Ϊ��ɫ)����������������ַ���ֹͣ��</span></span><br><span class="line"><span class="comment">	*</span></span><br><span class="line"><span class="comment">	* \param img  �����Ӱ��</span></span><br><span class="line"><span class="comment">	* \param text �ı�����</span></span><br><span class="line"><span class="comment">	* \param pos  �ı�λ��</span></span><br><span class="line"><span class="comment">	*</span></span><br><span class="line"><span class="comment">	* \return ���سɹ�������ַ����ȣ�ʧ�ܷ���-1��</span></span><br><span class="line"><span class="comment">	*/</span></span><br><span class="line"></span><br><span class="line">	<span class="function"><span class="type">int</span> <span class="title">putText</span><span class="params">(cv::Mat &amp;frame, <span class="type">const</span> <span class="type">char</span>    *text, CvPoint pos)</span></span>;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/**</span></span><br><span class="line"><span class="comment">	* �������(��ɫĬ��Ϊ��ɫ)����������������ַ���ֹͣ��</span></span><br><span class="line"><span class="comment">	*</span></span><br><span class="line"><span class="comment">	* \param img  �����Ӱ��</span></span><br><span class="line"><span class="comment">	* \param text �ı�����</span></span><br><span class="line"><span class="comment">	* \param pos  �ı�λ��</span></span><br><span class="line"><span class="comment">	*</span></span><br><span class="line"><span class="comment">	* \return ���سɹ�������ַ����ȣ�ʧ�ܷ���-1��</span></span><br><span class="line"><span class="comment">	*/</span></span><br><span class="line"></span><br><span class="line">	<span class="function"><span class="type">int</span> <span class="title">putText</span><span class="params">(cv::Mat &amp;frame, <span class="type">const</span> <span class="type">wchar_t</span> *text, CvPoint pos)</span></span>;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/**</span></span><br><span class="line"><span class="comment">	* ������֡���������������ַ���ֹͣ��</span></span><br><span class="line"><span class="comment">	*</span></span><br><span class="line"><span class="comment">	* \param img   �����Ӱ��</span></span><br><span class="line"><span class="comment">	* \param text  �ı�����</span></span><br><span class="line"><span class="comment">	* \param pos   �ı�λ��</span></span><br><span class="line"><span class="comment">	* \param color �ı���ɫ</span></span><br><span class="line"><span class="comment">	*</span></span><br><span class="line"><span class="comment">	* \return ���سɹ�������ַ����ȣ�ʧ�ܷ���-1��</span></span><br><span class="line"><span class="comment">	*/</span></span><br><span class="line"></span><br><span class="line">	<span class="function"><span class="type">int</span> <span class="title">putText</span><span class="params">(cv::Mat &amp;frame, <span class="type">const</span> <span class="type">char</span>    *text, CvPoint pos, CvScalar color)</span></span>;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/**</span></span><br><span class="line"><span class="comment">	* ������֡���������������ַ���ֹͣ��</span></span><br><span class="line"><span class="comment">	*</span></span><br><span class="line"><span class="comment">	* \param img   �����Ӱ��</span></span><br><span class="line"><span class="comment">	* \param text  �ı�����</span></span><br><span class="line"><span class="comment">	* \param pos   �ı�λ��</span></span><br><span class="line"><span class="comment">	* \param color �ı���ɫ</span></span><br><span class="line"><span class="comment">	*</span></span><br><span class="line"><span class="comment">	* \return ���سɹ�������ַ����ȣ�ʧ�ܷ���-1��</span></span><br><span class="line"><span class="comment">	*/</span></span><br><span class="line">	<span class="function"><span class="type">int</span> <span class="title">putText</span><span class="params">(cv::Mat &amp;frame, <span class="type">const</span> <span class="type">wchar_t</span> *text, CvPoint pos, CvScalar color)</span></span>;</span><br><span class="line"></span><br><span class="line">	<span class="comment">//================================================================  </span></span><br><span class="line">	<span class="comment">//================================================================  </span></span><br><span class="line"></span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line"></span><br><span class="line">	<span class="comment">// �����ǰ�ַ�, ����m_posλ��  </span></span><br><span class="line"></span><br><span class="line">	<span class="function"><span class="type">void</span> <span class="title">putWChar</span><span class="params">(cv::Mat &amp;frame, <span class="type">wchar_t</span> wc, CvPoint &amp;pos, CvScalar color)</span></span>;</span><br><span class="line"></span><br><span class="line">	<span class="comment">//================================================================  </span></span><br><span class="line">	<span class="comment">//================================================================  </span></span><br><span class="line"></span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line"></span><br><span class="line">	FT_Library   m_library;   <span class="comment">// �ֿ�  </span></span><br><span class="line">	FT_Face      m_face;      <span class="comment">// ����  </span></span><br><span class="line"></span><br><span class="line">	<span class="comment">//================================================================  </span></span><br><span class="line">	<span class="comment">//================================================================  </span></span><br><span class="line"></span><br><span class="line">	<span class="comment">// Ĭ�ϵ������������  </span></span><br><span class="line"></span><br><span class="line">	<span class="type">int</span>         m_fontType;</span><br><span class="line">	CvScalar   m_fontSize;</span><br><span class="line">	<span class="type">bool</span>      m_fontUnderline;</span><br><span class="line">	<span class="type">float</span>      m_fontDiaphaneity;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line"></span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2024/09/08/csapp%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" rel="prev" title="csapp学习笔记">
+      <i class="fa fa-chevron-left"></i> csapp学习笔记
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#freetype%E7%A7%BB%E6%A4%8D"><span class="nav-number">1.</span> <span class="nav-text">freetype移植</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%B1%BB%E5%9E%8B%E5%8C%B9%E9%85%8D"><span class="nav-number">1.1.</span> <span class="nav-text">类型匹配</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%B8%AD%E6%96%87%E5%AD%97%E4%BD%93%E4%BD%BF%E7%94%A8%E5%AE%BD%E5%AD%97%E7%AC%A6"><span class="nav-number">1.2.</span> <span class="nav-text">中文字体使用宽字符</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#CvxText"><span class="nav-number">1.3.</span> <span class="nav-text">CvxText</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Makefile"><span class="nav-number">1.4.</span> <span class="nav-text">Makefile</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#msyh-ttf"><span class="nav-number">1.5.</span> <span class="nav-text">msyh.ttf</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#CvxText-cpp"><span class="nav-number">1.6.</span> <span class="nav-text">CvxText.cpp</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#CvxText-h"><span class="nav-number">1.7.</span> <span class="nav-text">CvxText.h</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">ADonkey</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">8</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2024</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">ADonkey</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+    <span title="站点总字数">26k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    <span title="站点阅读时长">24 分钟</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>
