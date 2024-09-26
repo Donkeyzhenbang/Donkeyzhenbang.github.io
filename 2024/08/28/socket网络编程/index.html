@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="day01注意事项 在使用 accept 和 connect 之前，需要确保套接字已经正确创建并配置（例如，对于 accept，需要先绑定（bind）和监听（listen）套接字；对于 connect，需要先创建套接字并指定服务器的地址）。  bzero 可用于初始化结构体 入口参数是addr和size  socklen_t 用于表示套接字地址结构的长度 传递地址长度：在调用如 bind、conn">
+<meta property="og:type" content="article">
+<meta property="og:title" content="socket网络编程">
+<meta property="og:url" content="http://example.com/2024/08/28/socket%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B/index.html">
+<meta property="og:site_name" content="凌云苑">
+<meta property="og:description" content="day01注意事项 在使用 accept 和 connect 之前，需要确保套接字已经正确创建并配置（例如，对于 accept，需要先绑定（bind）和监听（listen）套接字；对于 connect，需要先创建套接字并指定服务器的地址）。  bzero 可用于初始化结构体 入口参数是addr和size  socklen_t 用于表示套接字地址结构的长度 传递地址长度：在调用如 bind、conn">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2024-08-28T00:00:00.000Z">
+<meta property="article:modified_time" content="2024-09-26T00:00:00.000Z">
+<meta property="article:author" content="ADonkey">
+<meta property="article:tag" content="C++">
+<meta property="article:tag" content="Linux系统">
+<meta property="article:tag" content="后端">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://example.com/2024/08/28/socket%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>socket网络编程 | 凌云苑</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">凌云苑</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2024/08/28/socket%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="ADonkey">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="凌云苑">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          socket网络编程
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2024-08-28 08:00:00" itemprop="dateCreated datePublished" datetime="2024-08-28T08:00:00+08:00">2024-08-28</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2024-09-26 08:00:00" itemprop="dateModified" datetime="2024-09-26T08:00:00+08:00">2024-09-26</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/C/" itemprop="url" rel="index"><span itemprop="name">C++</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/C/Linux%E7%B3%BB%E7%BB%9F/" itemprop="url" rel="index"><span itemprop="name">Linux系统</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/C/Linux%E7%B3%BB%E7%BB%9F/%E5%90%8E%E7%AB%AF/" itemprop="url" rel="index"><span itemprop="name">后端</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>4.2k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>4 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="day01"><a href="#day01" class="headerlink" title="day01"></a>day01</h2><h3 id="注意事项"><a href="#注意事项" class="headerlink" title="注意事项"></a>注意事项</h3><ul>
+<li>在使用 accept 和 connect 之前，需要确保套接字已经正确创建并配置（例如，对于 accept，需要先绑定（bind）和监听（listen）套接字；对于 connect，需要先创建套接字并指定服务器的地址）。</li>
+</ul>
+<h3 id="bzero"><a href="#bzero" class="headerlink" title="bzero"></a>bzero</h3><ul>
+<li>可用于初始化结构体 入口参数是addr和size</li>
+</ul>
+<h3 id="socklen-t"><a href="#socklen-t" class="headerlink" title="socklen_t"></a>socklen_t</h3><ul>
+<li>用于表示套接字地址结构的长度</li>
+<li>传递地址长度：在调用如 bind、connect、accept、getsockname、getpeername 等函数时，socklen_t 用于指定套接字地址结构的长度，或者用于接收函数返回的实际长度。</li>
+<li>确保类型安全：由于历史原因，一些旧的网络函数可能期望地址长度参数是一个特定类型的指针（如 int *），而不是 socklen_t *。使用 socklen_t 可以帮助确保类型的正确性和兼容性。</li>
+<li>避免溢出：由于 socklen_t 是无符号类型，它可以防止地址长度的溢出，这在处理来自不受信任来源的数据时尤其重要。</li>
+</ul>
+<h3 id="bind函数原型"><a href="#bind函数原型" class="headerlink" title="bind函数原型"></a>bind函数原型</h3><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">int</span> <span class="title">bind</span><span class="params">(<span class="type">int</span> sockfd, <span class="type">const</span> <span class="keyword">struct</span> sockaddr *addr, <span class="type">socklen_t</span> addrlen)</span></span>;</span><br></pre></td></tr></table></figure>
+<p>参数说明：</p>
+<ul>
+<li>sockfd：套接字文件描述符，这个套接字应该是之前已经创建的。</li>
+<li>addr：指向 sockaddr 结构的指针，该结构包含了套接字要绑定的地址信息。对于 IPv4，这通常是 struct sockaddr_in 结构；对于 IPv6，则是 struct sockaddr_in6 结构。</li>
+<li>addrlen：addr 指向的地址结构的大小。</li>
+</ul>
+<p>返回值：</p>
+<ul>
+<li>成功时，bind 函数返回 0。</li>
+<li>失败时，返回 -1 并设置全局变量 errno 以指示错误原因。</li>
+</ul>
+<h3 id="listen函数原型"><a href="#listen函数原型" class="headerlink" title="listen函数原型"></a>listen函数原型</h3><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">int</span> <span class="title">listen</span><span class="params">(<span class="type">int</span> sockfd, <span class="type">int</span> backlog)</span></span></span><br></pre></td></tr></table></figure>
+<p>参数说明：</p>
+<ul>
+<li>sockfd：套接字文件描述符，这个套接字应该是之前已经创建并且绑定到一个地址上的。</li>
+<li>backlog：这个参数指定了内核应该为相应套接字排队的最大连接个数。这个数值不能超过系统特定的上限，通常在 &#x2F;proc&#x2F;sys&#x2F;net&#x2F;core&#x2F;somaxconn 文件中定义。</li>
+</ul>
+<p>返回值：</p>
+<ul>
+<li>成功时，listen 函数返回 0。</li>
+<li>失败时，返回 -1 并设置全局变量 errno 以指示错误原因。</li>
+</ul>
+<h3 id="accept函数原型"><a href="#accept函数原型" class="headerlink" title="accept函数原型"></a>accept函数原型</h3><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">int</span> <span class="title">accept</span><span class="params">(<span class="type">int</span> sockfd, <span class="keyword">struct</span> sockaddr* addr, <span class="type">socklen_t</span>* addrlen)</span></span>;</span><br></pre></td></tr></table></figure>
+<p>参数说明：</p>
+<ul>
+<li>sockfd：监听套接字的文件描述符。</li>
+<li>addr：（可选）指向 sockaddr 结构的指针，用于存储连接客户端的地址信息。如果不需要客户端地址，可以设置为 NULL。</li>
+<li>addrlen：（可选）指向 socklen_t 类型变量的指针，该变量在调用 accept 时应该包含 addr 指向的缓冲区的大小。accept 成功返回后，该变量会包含实际客户端地址的大小。如果不需要客户端地址，可以设置为 NULL。</li>
+<li>accept函数会阻塞当前程序，直至有一个客户端socket被接受程序才继续往下进行</li>
+</ul>
+<h3 id="connect函数原型"><a href="#connect函数原型" class="headerlink" title="connect函数原型"></a>connect函数原型</h3><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">int</span> <span class="title">connect</span><span class="params">(<span class="type">int</span> sockfd, <span class="type">const</span> <span class="keyword">struct</span> sockaddr* addr, <span class="type">socklen_t</span> addrlen)</span></span>;</span><br></pre></td></tr></table></figure>
+<p>参数说明：</p>
+<ul>
+<li>sockfd：客户端的套接字文件描述符。</li>
+<li>addr：指向 sockaddr 结构的指针，该结构包含了服务器端套接字的地址信息。</li>
+<li>addrlen：addr 指向的 sockaddr 结构的大小。</li>
+<li>connect函数也是阻塞调用 连接成功&#x2F;失败&#x2F;超时</li>
+</ul>
+<p>返回值：</p>
+<ul>
+<li>accept 和 connect 函数在成功时返回非负值。</li>
+<li>accept 返回一个新的文件描述符，用于与客户端通信的已连接套接字。</li>
+<li>connect 返回 0 表示连接成功。</li>
+<li>在失败时，这两个函数都会返回 -1，并设置全局变量 errno 以指示错误的具体原因。</li>
+</ul>
+<h2 id="day02"><a href="#day02" class="headerlink" title="day02"></a>day02</h2><h3 id="注意事项-1"><a href="#注意事项-1" class="headerlink" title="注意事项"></a>注意事项</h3><ul>
+<li>printf输出到屏幕记得加\n 否则会暂存在缓冲区</li>
+<li>inet_ntop 和 inet_pton 函数是线程安全的。</li>
+<li>read 和 write 函数通常用于文件 I&#x2F;O，但也可以用于套接字 I&#x2F;O，尤其是在使用 Unix 域套接字时。<br>recv send函数专门用于网络套接字，它提供了一些特定于网络操作的标志，如 MSG_DONTWAIT 来执行非阻塞接收。</li>
+</ul>
+<h3 id="size-t"><a href="#size-t" class="headerlink" title="size_t"></a>size_t</h3><ul>
+<li>size_t 是 C 语言标准库中定义的一个数据类型，它是一个无符号整数类型，通常用于表示对象的大小或数组中的元素数量。在内存分配、数组索引和其他需要表示内存大小或对象数量的上下文中，size_t 是一个常用的类型。它的定义通常在头文件 &lt;stddef.h&gt; 或 &lt;sys&#x2F;types.h&gt; 中。</li>
+<li>可用于内存分配，数组大小，字符串长度，I&#x2F;O操作<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//内存操作</span></span><br><span class="line"><span class="type">size_t</span> num_bytes = <span class="number">1024</span>;</span><br><span class="line"><span class="type">void</span>* buf = <span class="built_in">malloc</span>(num_types)</span><br><span class="line"><span class="comment">//I/O操作</span></span><br><span class="line"><span class="type">size_t</span> bytes_to_read = <span class="number">512</span>;</span><br><span class="line"><span class="type">ssize_t</span> bytes_read = <span class="built_in">read</span>(file_descriptor, buffer, bytes_to_read);</span><br></pre></td></tr></table></figure></li>
+</ul>
+<h3 id="ssize-t"><a href="#ssize-t" class="headerlink" title="ssize_t"></a>ssize_t</h3><p>参数说明：</p>
+<ul>
+<li><p>ssize_t 通常在 &lt;sys&#x2F;types.h&gt; 头文件中定义</p>
+</li>
+<li><p>文件读写：如 read 和 write 系统调用，它们返回从文件中读取或写入文件的字节数，或者在出错时返回 -1。</p>
+</li>
+<li><p>字符串和内存操作：如 strlen 函数，它返回字符串的长度，使用 ssize_t 类型可以确保即使是非常长的字符串也能正确返回其长度。</p>
+</li>
+<li><p>网络编程：如 send 和 recv 函数，它们返回成功发送或接收的字节数，或者在出错时返回 -1。</p>
+</li>
+</ul>
+<p>ssize_t和size_t区别：</p>
+<p>1.有符号与无符号：</p>
+<ul>
+<li>size_t 是一个无符号整数类型，用于表示对象的大小或者数组中元素的数量。由于它不能表示负值，所以它只能用于表示非负的内存大小或计数。</li>
+<li>ssize_t 是一个有符号整数类型，通常用于表示可以失败的系统调用的返回值，比如文件的读写操作。它可以表示负值，用于表示错误或者特定的状态。</li>
+</ul>
+<p>2.用途：</p>
+<ul>
+<li>size_t 通常用于内存分配（如 malloc、calloc 等函数的返回值），数组索引，以及任何需要表示大小或计数的上下文。</li>
+<li>ssize_t 通常用于系统调用和库函数的返回值，如 read、write、send、recv 等，这些函数可能会失败并返回错误码（负值）。</li>
+</ul>
+<h3 id="read"><a href="#read" class="headerlink" title="read"></a>read</h3><p>read函数用于从文件描述符读取数据，它也可以用于从套接字读取数据。阻塞函数，直到有数据可读</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="function"><span class="type">ssize_t</span> <span class="title">read</span><span class="params">(<span class="type">int</span> fd, <span class="type">void</span>* buf, <span class="type">size_t</span> count)</span></span>;</span><br></pre></td></tr></table></figure>
+<p>参数说明：</p>
+<ul>
+<li>fd：文件描述符，可以是任何类型的文件、设备或套接字。</li>
+<li>buf：指向缓冲区的指针，用于存储从文件描述符读取的数据。</li>
+<li>count：要读取的最大字节数。<br>返回值：</li>
+<li>read 成功时返回读取的字节数，出错时返回 -1。</li>
+<li>如果到达文件或套接字的末尾（EOF），read 函数返回 0</li>
+</ul>
+<h3 id="write"><a href="#write" class="headerlink" title="write"></a>write</h3><p>write 函数用于将数据写入文件描述符，它也可以用于将数据发送到套接字。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;sys/socket.h&gt;</span></span></span><br><span class="line"><span class="function"><span class="type">ssize_t</span> <span class="title">recv</span><span class="params">(<span class="type">int</span> sockfd, <span class="type">void</span> *buf, <span class="type">size_t</span> len, <span class="type">int</span> flags)</span></span>;</span><br></pre></td></tr></table></figure>
+<p>参数说明：</p>
+<ul>
+<li>fd：文件描述符，可以是任何类型的文件、设备或套接字。</li>
+<li>buf：指向缓冲区的指针，包含要写入文件描述符的数据。</li>
+<li>count：要写入的最大字节数。<br>返回值：</li>
+<li>write 成功时返回写入的字节数，出错时返回 -1。</li>
+</ul>
+<h3 id="recv"><a href="#recv" class="headerlink" title="recv"></a>recv</h3><p>recv 函数是 BSD 套接字 API 的一部分，专门用于从套接字接收数据。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;sys/socket.h&gt;</span></span></span><br><span class="line"><span class="function"><span class="type">ssize_t</span> <span class="title">recv</span><span class="params">(<span class="type">int</span> sockfd, <span class="type">void</span> *buf, <span class="type">size_t</span> len, <span class="type">int</span> flags)</span></span>;</span><br></pre></td></tr></table></figure>
+<p>参数说明：</p>
+<ul>
+<li>sockfd：套接字文件描述符。</li>
+<li>buf：指向缓冲区的指针，用于存储从套接字接收的数据。</li>
+<li>len：要接收的最大字节数。</li>
+<li>flags：指定接收操作的行为，通常设置为 0。可以设置 MSG_OOB 来接收带外数据，MSG_PEEK 来窥视数据但不从队列中移除，MSG_WAITALL 来等待所有数据到达等。<br>返回值：</li>
+<li>recv 成功时返回读取的字节数，出错时返回 -1。</li>
+</ul>
+<h3 id="send"><a href="#send" class="headerlink" title="send"></a>send</h3><p>send 函数用于向与套接字相关联的对等点发送数据。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">ssize_t</span> <span class="title">send</span><span class="params">(<span class="type">int</span> sockfd, <span class="type">const</span> <span class="type">void</span>* buf, <span class="type">size_t</span> len, <span class="type">int</span> flags)</span></span></span><br></pre></td></tr></table></figure>
+<p>参数说明：</p>
+<ul>
+<li>sockfd：套接字文件描述符。</li>
+<li>buf：指向要发送数据的缓冲区的指针。</li>
+<li>len：要发送的数据的长度。</li>
+<li>flags：指定发送操作的行为，通常设置为 0。</li>
+</ul>
+<p>返回值：</p>
+<ul>
+<li>send 成功时返回发送的字节数，出错时返回 -1。</li>
+</ul>
+<h3 id="inet-ntop"><a href="#inet-ntop" class="headerlink" title="inet_ntop"></a>inet_ntop</h3><p>inet_ntop 函数用于将网络地址从二进制形式转换为文本形式的 IP 地址。</p>
+<ul>
+<li>n 代表 “number”，这里指的是网络地址的数值形式，通常是二进制形式的网络地址。</li>
+<li>p 代表 “presentation”，这里指的是网络地址的表示形式，即人类可读的格式，如 IPv4 或 IPv6 的点分十进制表示。<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;arpa/inet.h&gt;</span></span></span><br><span class="line"><span class="function"><span class="type">const</span> <span class="type">char</span>* <span class="title">inet_ntop</span><span class="params">(<span class="type">int</span> af, <span class="type">const</span> <span class="type">void</span>* src, <span class="type">char</span>* dst, <span class="type">socklen_t</span> size)</span></span>;</span><br></pre></td></tr></table></figure>
+参数说明：</li>
+<li>af：地址族，例如 AF_INET 或 AF_INET6。</li>
+<li>src：指向二进制网络地址的指针。</li>
+<li>dst：指向用于存储转换后的文本地址的缓冲区的指针。</li>
+<li>size：dst 缓冲区的大小。</li>
+</ul>
+<p>返回值：</p>
+<ul>
+<li>inet_ntop 返回一个指向转换后的文本地址的指针，或者在出错时返回 NULL。</li>
+</ul>
+<h3 id="inet-pton"><a href="#inet-pton" class="headerlink" title="inet_pton"></a>inet_pton</h3><p>inet_pton 函数用于将文本形式的 IP 地址转换为二进制形式的网络地址。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;arpa/inet.h&gt;</span></span></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">inet_pton</span><span class="params">(<span class="type">int</span> af, <span class="type">const</span> <span class="type">char</span>* src, <span class="type">void</span>* dst)</span></span>;</span><br></pre></td></tr></table></figure>
+<p>参数说明：</p>
+<ul>
+<li>af：地址族，例如 AF_INET 或 AF_INET6。</li>
+<li>src：指向文本形式的 IP 地址字符串的指针。</li>
+<li>dst：指向用于存储转换后的二进制网络地址的缓冲区的指针。</li>
+</ul>
+<p>返回值：</p>
+<ul>
+<li>inet_pton 成功时返回 1，出错时返回 -1，如果输入地址无效则返回 0。</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/C/" rel="tag"># C++</a>
+              <a href="/tags/Linux%E7%B3%BB%E7%BB%9F/" rel="tag"># Linux系统</a>
+              <a href="/tags/%E5%90%8E%E7%AB%AF/" rel="tag"># 后端</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2024/08/21/%E6%9C%8D%E5%8A%A1%E5%99%A8%E9%80%9A%E4%BF%A1/" rel="prev" title="服务器通信">
+      <i class="fa fa-chevron-left"></i> 服务器通信
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2024/08/28/cjson%E6%BA%90%E7%A0%81%E5%AD%A6%E4%B9%A0/" rel="next" title="cjson源码实现">
+      cjson源码实现 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#day01"><span class="nav-number">1.</span> <span class="nav-text">day01</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B3%A8%E6%84%8F%E4%BA%8B%E9%A1%B9"><span class="nav-number">1.1.</span> <span class="nav-text">注意事项</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#bzero"><span class="nav-number">1.2.</span> <span class="nav-text">bzero</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#socklen-t"><span class="nav-number">1.3.</span> <span class="nav-text">socklen_t</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#bind%E5%87%BD%E6%95%B0%E5%8E%9F%E5%9E%8B"><span class="nav-number">1.4.</span> <span class="nav-text">bind函数原型</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#listen%E5%87%BD%E6%95%B0%E5%8E%9F%E5%9E%8B"><span class="nav-number">1.5.</span> <span class="nav-text">listen函数原型</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#accept%E5%87%BD%E6%95%B0%E5%8E%9F%E5%9E%8B"><span class="nav-number">1.6.</span> <span class="nav-text">accept函数原型</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#connect%E5%87%BD%E6%95%B0%E5%8E%9F%E5%9E%8B"><span class="nav-number">1.7.</span> <span class="nav-text">connect函数原型</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#day02"><span class="nav-number">2.</span> <span class="nav-text">day02</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B3%A8%E6%84%8F%E4%BA%8B%E9%A1%B9-1"><span class="nav-number">2.1.</span> <span class="nav-text">注意事项</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#size-t"><span class="nav-number">2.2.</span> <span class="nav-text">size_t</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#ssize-t"><span class="nav-number">2.3.</span> <span class="nav-text">ssize_t</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#read"><span class="nav-number">2.4.</span> <span class="nav-text">read</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#write"><span class="nav-number">2.5.</span> <span class="nav-text">write</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#recv"><span class="nav-number">2.6.</span> <span class="nav-text">recv</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#send"><span class="nav-number">2.7.</span> <span class="nav-text">send</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#inet-ntop"><span class="nav-number">2.8.</span> <span class="nav-text">inet_ntop</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#inet-pton"><span class="nav-number">2.9.</span> <span class="nav-text">inet_pton</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">ADonkey</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">8</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">10</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">11</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2024</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">ADonkey</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+    <span title="站点总字数">26k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    <span title="站点阅读时长">24 分钟</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>
