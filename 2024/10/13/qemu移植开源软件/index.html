@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="webserverboaboa概述 boa移植1.解压源代码1tar -xvf boa-0.94.13.tar.gz   2.生成Makefile12cd .&#x2F;boa-0.94.13&#x2F;src .&#x2F;configure  3.编译源代码123456将Makefile中的下面内容：CC &#x3D; gccCPP &#x3D; gcc –E改为（即采用交叉编译工具）：CC &#x3D; arm-linux-gccCPP &#x3D; arm-">
+<meta property="og:type" content="article">
+<meta property="og:title" content="qemu移植开源软件">
+<meta property="og:url" content="http://example.com/2024/10/13/qemu%E7%A7%BB%E6%A4%8D%E5%BC%80%E6%BA%90%E8%BD%AF%E4%BB%B6/index.html">
+<meta property="og:site_name" content="凌云苑">
+<meta property="og:description" content="webserverboaboa概述 boa移植1.解压源代码1tar -xvf boa-0.94.13.tar.gz   2.生成Makefile12cd .&#x2F;boa-0.94.13&#x2F;src .&#x2F;configure  3.编译源代码123456将Makefile中的下面内容：CC &#x3D; gccCPP &#x3D; gcc –E改为（即采用交叉编译工具）：CC &#x3D; arm-linux-gccCPP &#x3D; arm-">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20241015223050748.png">
+<meta property="og:image" content="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20241017093215392.png">
+<meta property="og:image" content="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20241017092231141.png">
+<meta property="og:image" content="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20241017092608730.png">
+<meta property="og:image" content="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20241017092209961.png">
+<meta property="og:image" content="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20241016232303443.png">
+<meta property="og:image" content="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20241016233558824.png">
+<meta property="og:image" content="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20241017090810624.png">
+<meta property="og:image" content="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20241017090719513.png">
+<meta property="og:image" content="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20241017091028207.png">
+<meta property="og:image" content="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20241017091252686.png">
+<meta property="og:image" content="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20241015225141191.png">
+<meta property="og:image" content="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20241015225312473.png">
+<meta property="og:image" content="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20241015225538409.png">
+<meta property="og:image" content="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20241015225711248.png">
+<meta property="article:published_time" content="2024-10-13T00:00:00.000Z">
+<meta property="article:modified_time" content="2024-10-13T00:00:00.000Z">
+<meta property="article:author" content="ADonkey">
+<meta property="article:tag" content="嵌入式">
+<meta property="article:tag" content="Linux系统">
+<meta property="article:tag" content="STM32">
+<meta property="article:tag" content="FreeRTOS">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20241015223050748.png">
+
+<link rel="canonical" href="http://example.com/2024/10/13/qemu%E7%A7%BB%E6%A4%8D%E5%BC%80%E6%BA%90%E8%BD%AF%E4%BB%B6/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>qemu移植开源软件 | 凌云苑</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">凌云苑</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2024/10/13/qemu%E7%A7%BB%E6%A4%8D%E5%BC%80%E6%BA%90%E8%BD%AF%E4%BB%B6/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="ADonkey">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="凌云苑">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          qemu移植开源软件
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2024-10-13 08:00:00" itemprop="dateCreated datePublished" datetime="2024-10-13T08:00:00+08:00">2024-10-13</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%B5%8C%E5%85%A5%E5%BC%8F/" itemprop="url" rel="index"><span itemprop="name">嵌入式</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>27k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>24 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="webserver"><a href="#webserver" class="headerlink" title="webserver"></a>webserver</h2><h3 id="boa"><a href="#boa" class="headerlink" title="boa"></a>boa</h3><h4 id="boa概述"><a href="#boa概述" class="headerlink" title="boa概述"></a>boa概述</h4><p><img src="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20241015223050748.png" alt="image-20241015223050748"></p>
+<h4 id="boa移植"><a href="#boa移植" class="headerlink" title="boa移植"></a>boa移植</h4><h5 id="1-解压源代码"><a href="#1-解压源代码" class="headerlink" title="1.解压源代码"></a>1.解压源代码</h5><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">tar -xvf boa-0.94.13.tar.gz </span><br></pre></td></tr></table></figure>
+
+<h5 id="2-生成Makefile"><a href="#2-生成Makefile" class="headerlink" title="2.生成Makefile"></a>2.生成Makefile</h5><figure class="highlight v"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">cd ./boa-<span class="number">0</span><span class="variable">.94</span><span class="variable">.13</span>/src </span><br><span class="line">./configure</span><br></pre></td></tr></table></figure>
+
+<h5 id="3-编译源代码"><a href="#3-编译源代码" class="headerlink" title="3.编译源代码"></a>3.编译源代码</h5><figure class="highlight makefile"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">将Makefile中的下面内容：</span><br><span class="line">CC = gcc</span><br><span class="line">CPP = gcc –E</span><br><span class="line">改为（即采用交叉编译工具）：</span><br><span class="line">CC = arm-linux-gcc</span><br><span class="line">CPP = arm-linux-gcc –E</span><br></pre></td></tr></table></figure>
+
+<h5 id="4-修改源代码-修改src-compat-h"><a href="#4-修改源代码-修改src-compat-h" class="headerlink" title="4.修改源代码 修改src&#x2F;compat.h"></a>4.修改源代码 修改src&#x2F;compat.h</h5><p>出现错误：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">compat.h:120:30: note: in definition of macro ‘TIMEZONE_OFFSET’</span><br><span class="line">#define TIMEZONE_OFFSET(foo) foo##-&gt;tm_gmtoff</span><br><span class="line">                                      ^</span><br><span class="line">make: *** [util.o] Error 1</span><br></pre></td></tr></table></figure>
+
+<p>解决方案：</p>
+<pre><code>vim compat.h 
+#define TIMEZONE_OFFSET(foo) (foo)-&gt;tm_gmtoff        //修改成这个
+//#define TIMEZONE_OFFSET(foo) foo##-&gt;tm_gmtoff        //注释掉
+
+vim boa.c  //注释掉下面部分
+#if 0     
+    if (setuid(0) != -1) &#123;
+        DIE(&quot;icky Linux kernel bug!&quot;);
+    &#125;
+#endif   
+</code></pre>
+<h5 id="5-编译-make-clean-make-j8生成boa文件"><a href="#5-编译-make-clean-make-j8生成boa文件" class="headerlink" title="5.编译 make clean &amp;&amp; make -j8生成boa文件"></a>5.编译 make clean &amp;&amp; make -j8生成boa文件</h5><p>此时再次按照自己的需求修改安装目录，着重修改如下内容：</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">Port  80  </span><br><span class="line">User  0  </span><br><span class="line">Group 0  </span><br><span class="line"><span class="comment">#Listen 192.68.0.5 </span></span><br><span class="line">ErrorLog /boa/log/error_log  </span><br><span class="line">AccessLog /boa/log/access_log    </span><br><span class="line">DocumentRoot /boa/www  </span><br><span class="line">UserDir public_html  </span><br><span class="line">DirectoryIndex index.html    </span><br><span class="line">DirectoryMaker /boa/boa_indexer</span><br><span class="line">KeepAliveMax 1000  </span><br><span class="line">KeepAliveTimeout 10  </span><br><span class="line">MimeTypes /boa/mime.types </span><br><span class="line">DefaultType text/plain    </span><br><span class="line">CGIPath /bin:/usr/bin:/usr/local/bin   </span><br><span class="line">Alias /doc /usr/doc   </span><br><span class="line">ScriptAlias /cgi-bin/ /boa/cgi-bin/</span><br></pre></td></tr></table></figure>
+
+<p>我的目录在&#x2F;etc&#x2F;boa，boa.conf配置文件如下：</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br><span class="line">169</span><br><span class="line">170</span><br><span class="line">171</span><br><span class="line">172</span><br><span class="line">173</span><br><span class="line">174</span><br><span class="line">175</span><br><span class="line">176</span><br><span class="line">177</span><br><span class="line">178</span><br><span class="line">179</span><br><span class="line">180</span><br><span class="line">181</span><br><span class="line">182</span><br><span class="line">183</span><br><span class="line">184</span><br><span class="line">185</span><br><span class="line">186</span><br><span class="line">187</span><br><span class="line">188</span><br><span class="line">189</span><br><span class="line">190</span><br><span class="line">191</span><br><span class="line">192</span><br><span class="line">193</span><br><span class="line">194</span><br><span class="line">195</span><br><span class="line">196</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="comment"># Boa v0.94 configuration file</span></span><br><span class="line"><span class="comment"># File format has not changed from 0.93</span></span><br><span class="line"><span class="comment"># File format has changed little from 0.92</span></span><br><span class="line"><span class="comment"># version changes are noted in the comments</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line"><span class="comment"># The Boa configuration file is parsed with a lex/yacc or flex/bison</span></span><br><span class="line"><span class="comment"># generated parser.  If it reports an error, the line number will be</span></span><br><span class="line"><span class="comment"># provided; it should be easy to spot.  The syntax of each of these</span></span><br><span class="line"><span class="comment"># rules is very simple, and they can occur in any order.  Where possible</span></span><br><span class="line"><span class="comment"># these directives mimic those of NCSA httpd 1.3; I saw no reason to</span></span><br><span class="line"><span class="comment"># introduce gratuitous differences.</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># $Id: boa.conf,v 1.25 2002/03/22 04:33:09 jnelson Exp $</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># The &quot;ServerRoot&quot; is not in this configuration file.  It can be compiled</span></span><br><span class="line"><span class="comment"># into the server (see defines.h) or specified on the command line with</span></span><br><span class="line"><span class="comment"># the -c option, for example:</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line"><span class="comment"># boa -c /usr/local/boa</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># Port: The port Boa runs on.  The default port for http servers is 80.</span></span><br><span class="line"><span class="comment"># If it is less than 1024, the server must be started as root.</span></span><br><span class="line"></span><br><span class="line">Port 80</span><br><span class="line"></span><br><span class="line"><span class="comment"># Listen: the Internet address to bind(2) to.  If you leave it out,</span></span><br><span class="line"><span class="comment"># it takes the behavior before 0.93.17.2, which is to bind to all</span></span><br><span class="line"><span class="comment"># addresses (INADDR_ANY).  You only get one &quot;Listen&quot; directive,</span></span><br><span class="line"><span class="comment"># if you want service on multiple IP addresses, you have three choices:</span></span><br><span class="line"><span class="comment">#    1. Run boa without a &quot;Listen&quot; directive</span></span><br><span class="line"><span class="comment">#       a. All addresses are treated the same; makes sense if the addresses</span></span><br><span class="line"><span class="comment">#          are localhost, ppp, and eth0.</span></span><br><span class="line"><span class="comment">#       b. Use the VirtualHost directive below to point requests to different</span></span><br><span class="line"><span class="comment">#          files.  Should be good for a very large number of addresses (web</span></span><br><span class="line"><span class="comment">#          hosting clients).</span></span><br><span class="line"><span class="comment">#    2. Run one copy of boa per IP address, each has its own configuration</span></span><br><span class="line"><span class="comment">#       with a &quot;Listen&quot; directive.  No big deal up to a few tens of addresses.</span></span><br><span class="line"><span class="comment">#       Nice separation between clients.</span></span><br><span class="line"><span class="comment"># The name you provide gets run through inet_aton(3), so you have to use dotted</span></span><br><span class="line"><span class="comment"># quad notation.  This configuration is too important to trust some DNS.</span></span><br><span class="line"></span><br><span class="line"><span class="comment">#Listen 192.68.0.5</span></span><br><span class="line"></span><br><span class="line"><span class="comment">#  User: The name or UID the server should run as.</span></span><br><span class="line"><span class="comment"># Group: The group name or GID the server should run as.</span></span><br><span class="line"></span><br><span class="line">User 0</span><br><span class="line">Group 0</span><br><span class="line"></span><br><span class="line"><span class="comment"># ServerAdmin: The email address where server problems should be sent.</span></span><br><span class="line"><span class="comment"># Note: this is not currently used, except as an environment variable</span></span><br><span class="line"><span class="comment"># for CGIs.</span></span><br><span class="line"></span><br><span class="line"><span class="comment">#ServerAdmin root@localhost</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># ErrorLog: The location of the error log file. If this does not start</span></span><br><span class="line"><span class="comment"># with /, it is considered relative to the server root.</span></span><br><span class="line"><span class="comment"># Set to /dev/null if you don&#x27;t want errors logged.</span></span><br><span class="line"><span class="comment"># If unset, defaults to /dev/stderr</span></span><br><span class="line"></span><br><span class="line">ErrorLog /etc/boa/log/error_log</span><br><span class="line"><span class="comment"># Please NOTE: Sending the logs to a pipe (&#x27;|&#x27;), as shown below,</span></span><br><span class="line"><span class="comment">#  is somewhat experimental and might fail under heavy load.</span></span><br><span class="line"><span class="comment"># &quot;Usual libc implementations of printf will stall the whole</span></span><br><span class="line"><span class="comment">#  process if the receiving end of a pipe stops reading.&quot;</span></span><br><span class="line"><span class="comment">#ErrorLog &quot;|/usr/sbin/cronolog --symlink=/var/log/boa/error_log /var/log/boa/error-%Y%m%d.log&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># AccessLog: The location of the access log file. If this does not</span></span><br><span class="line"><span class="comment"># start with /, it is considered relative to the server root.</span></span><br><span class="line"><span class="comment"># Comment out or set to /dev/null (less effective) to disable</span></span><br><span class="line"><span class="comment"># Access logging.</span></span><br><span class="line"></span><br><span class="line">AccessLog /etc/boa/log/access_log</span><br><span class="line"><span class="comment"># Please NOTE: Sending the logs to a pipe (&#x27;|&#x27;), as shown below,</span></span><br><span class="line"><span class="comment">#  is somewhat experimental and might fail under heavy load.</span></span><br><span class="line"><span class="comment"># &quot;Usual libc implementations of printf will stall the whole</span></span><br><span class="line"><span class="comment">#  process if the receiving end of a pipe stops reading.&quot;</span></span><br><span class="line"><span class="comment">#AccessLog  &quot;|/usr/sbin/cronolog --symlink=/var/log/boa/access_log /var/log/boa/access-%Y%m%d.log&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># UseLocaltime: Logical switch.  Uncomment to use localtime</span></span><br><span class="line"><span class="comment"># instead of UTC time</span></span><br><span class="line"><span class="comment">#UseLocaltime</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># VerboseCGILogs: this is just a logical switch.</span></span><br><span class="line"><span class="comment">#  It simply notes the start and stop times of cgis in the error log</span></span><br><span class="line"><span class="comment"># Comment out to disable.</span></span><br><span class="line"></span><br><span class="line"><span class="comment">#VerboseCGILogs</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># ServerName: the name of this server that should be sent back to</span></span><br><span class="line"><span class="comment"># clients if different than that returned by gethostname + gethostbyname</span></span><br><span class="line"></span><br><span class="line"><span class="comment">#ServerName www.your.org.here</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># VirtualHost: a logical switch.</span></span><br><span class="line"><span class="comment"># Comment out to disable.</span></span><br><span class="line"><span class="comment"># Given DocumentRoot /var/www, requests on interface &#x27;A&#x27; or IP &#x27;IP-A&#x27;</span></span><br><span class="line"><span class="comment"># become /var/www/IP-A.</span></span><br><span class="line"><span class="comment"># Example: http://localhost/ becomes /var/www/127.0.0.1</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line"><span class="comment"># Not used until version 0.93.17.2.  This &quot;feature&quot; also breaks commonlog</span></span><br><span class="line"><span class="comment"># output rules, it prepends the interface number to each access_log line.</span></span><br><span class="line"><span class="comment"># You are expected to fix that problem with a postprocessing script.</span></span><br><span class="line"></span><br><span class="line"><span class="comment">#VirtualHost</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># DocumentRoot: The root directory of the HTML documents.</span></span><br><span class="line"><span class="comment"># Comment out to disable server non user files.</span></span><br><span class="line"></span><br><span class="line">DocumentRoot /etc/boa/www</span><br><span class="line"></span><br><span class="line"><span class="comment"># UserDir: The name of the directory which is appended onto a user&#x27;s home</span></span><br><span class="line"><span class="comment"># directory if a ~user request is recieved.</span></span><br><span class="line"></span><br><span class="line">UserDir public_html</span><br><span class="line"></span><br><span class="line"><span class="comment"># DirectoryIndex: Name of the file to use as a pre-written HTML</span></span><br><span class="line"><span class="comment"># directory index.  Please MAKE AND USE THESE FILES.  On the</span></span><br><span class="line"><span class="comment"># fly creation of directory indexes can be _slow_.</span></span><br><span class="line"><span class="comment"># Comment out to always use DirectoryMaker</span></span><br><span class="line"></span><br><span class="line">DirectoryIndex index.html</span><br><span class="line"></span><br><span class="line"><span class="comment"># DirectoryMaker: Name of program used to create a directory listing.</span></span><br><span class="line"><span class="comment"># Comment out to disable directory listings.  If both this and</span></span><br><span class="line"><span class="comment"># DirectoryIndex are commented out, accessing a directory will give</span></span><br><span class="line"><span class="comment"># an error (though accessing files in the directory are still ok).</span></span><br><span class="line"></span><br><span class="line">DirectoryMaker /etc/boa/boa_indexer</span><br><span class="line"></span><br><span class="line"><span class="comment"># DirectoryCache: If DirectoryIndex doesn&#x27;t exist, and DirectoryMaker</span></span><br><span class="line"><span class="comment"># has been commented out, the the on-the-fly indexing of Boa can be used</span></span><br><span class="line"><span class="comment"># to generate indexes of directories. Be warned that the output is</span></span><br><span class="line"><span class="comment"># extremely minimal and can cause delays when slow disks are used.</span></span><br><span class="line"><span class="comment"># Note: The DirectoryCache must be writable by the same user/group that</span></span><br><span class="line"><span class="comment"># Boa runs as.</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># DirectoryCache /var/spool/boa/dircache</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># KeepAliveMax: Number of KeepAlive requests to allow per connection</span></span><br><span class="line"><span class="comment"># Comment out, or set to 0 to disable keepalive processing</span></span><br><span class="line"></span><br><span class="line">KeepAliveMax 1000</span><br><span class="line"></span><br><span class="line"><span class="comment"># KeepAliveTimeout: seconds to wait before keepalive connection times out</span></span><br><span class="line"></span><br><span class="line">KeepAliveTimeout 10</span><br><span class="line"></span><br><span class="line"><span class="comment"># MimeTypes: This is the file that is used to generate mime type pairs</span></span><br><span class="line"><span class="comment"># and Content-Type fields for boa.</span></span><br><span class="line"><span class="comment"># Set to /dev/null if you do not want to load a mime types file.</span></span><br><span class="line"><span class="comment"># Do *not* comment out (better use AddType!)</span></span><br><span class="line"></span><br><span class="line">MimeTypes /etc/boa/mime.types</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># DefaultType: MIME type used if the file extension is unknown, or there</span></span><br><span class="line"><span class="comment"># is no file extension.</span></span><br><span class="line"></span><br><span class="line">DefaultType text/plain</span><br><span class="line"></span><br><span class="line"><span class="comment"># CGIPath: The value of the $PATH environment variable given to CGI progs.</span></span><br><span class="line"></span><br><span class="line">CGIPath /bin:/usr/bin:/usr/local/bin</span><br><span class="line"></span><br><span class="line"><span class="comment"># SinglePostLimit: The maximum allowable number of bytes in</span></span><br><span class="line"><span class="comment"># a single POST.  Default is normally 1MB.</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># AddType: adds types without editing mime.types</span></span><br><span class="line"><span class="comment"># Example: AddType type extension [extension ...]</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># Uncomment the next line if you want .cgi files to execute from anywhere</span></span><br><span class="line"><span class="comment">#AddType application/x-httpd-cgi cgi</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># Redirect, Alias, and ScriptAlias all have the same semantics -- they</span></span><br><span class="line"><span class="comment"># match the beginning of a request and take appropriate action.  Use</span></span><br><span class="line"><span class="comment"># Redirect for other servers, Alias for the same server, and ScriptAlias</span></span><br><span class="line"><span class="comment"># to enable directories for script execution.</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># Redirect allows you to tell clients about documents which used to exist in</span></span><br><span class="line"><span class="comment"># your server&#x27;s namespace, but do not anymore. This allows you to tell the</span></span><br><span class="line"><span class="comment"># clients where to look for the relocated document.</span></span><br><span class="line"><span class="comment"># Example: Redirect /bar http://elsewhere/feh/bar</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># Aliases: Aliases one path to another.</span></span><br><span class="line"><span class="comment"># Example: Alias /path1/bar /path2/foo</span></span><br><span class="line"></span><br><span class="line">Alias /doc /usr/doc</span><br><span class="line"></span><br><span class="line"><span class="comment"># ScriptAlias: Maps a virtual path to a directory for serving scripts</span></span><br><span class="line"><span class="comment"># Example: ScriptAlias /htbin/ /www/htbin/</span></span><br><span class="line"></span><br><span class="line">ScriptAlias /cgi-bin/ /etc/boa/cgi-bin/</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+
+
+<h5 id="6-新建index-html和test-c"><a href="#6-新建index-html和test-c" class="headerlink" title="6.新建index.html和test.c"></a>6.新建index.html和test.c</h5><p>index.html:</p>
+<figure class="highlight html"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">html</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">body</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">h3</span>&gt;</span>this is a test! 2024-10-15 jym<span class="tag">&lt;/<span class="name">h3</span>&gt;</span><span class="tag">&lt;<span class="name">br</span>/&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">img</span> <span class="attr">src</span>=<span class="string">&quot;oei.jpg&quot;</span>/&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">h3</span>&gt;</span>tree picture<span class="tag">&lt;/<span class="name">h3</span>&gt;</span><span class="tag">&lt;<span class="name">br</span>/&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">a</span> <span class="attr">href</span>=<span class="string">&quot;/cgi-bin/test.cgi&quot;</span>&gt;</span>to cgi page<span class="tag">&lt;/<span class="name">a</span>&gt;</span>    //指定了cgi可执行文件存放的路径，默认从/boa的根目录开始查找</span><br><span class="line">    <span class="tag">&lt;/<span class="name">body</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">html</span>&gt;</span> j</span><br></pre></td></tr></table></figure>
+
+
+
+<p>test.c:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;Content-type:text/html\n\n&quot;</span>); <span class="comment">//这句一定要加上</span></span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;&lt;html&gt;&lt;body&gt;&quot;</span>);</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;&lt;font style=\&quot;color:red; font-size:30px;\&quot;&gt;Hello, CGI!&lt;/font&gt;&lt;br/&gt;&quot;</span>);</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;&lt;a href=\&quot;/index.html\&quot;&gt;return index.html&lt;/a&gt;&quot;</span>);</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;&lt;/body&gt;&lt;/html&gt;&quot;</span>);</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><em>gcc -o test.cgi test.c</em> 生成测试所用的test.cgi</p>
+<h5 id="7-拷贝相关文件"><a href="#7-拷贝相关文件" class="headerlink" title="7.拷贝相关文件"></a>7.拷贝相关文件</h5><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cp</span> boa boa_indexer test.cgi index.html ../boa.conf ../../arm64_boa</span><br><span class="line"><span class="built_in">cd</span> ../../arm64_boa</span><br><span class="line"><span class="built_in">mkdir</span> www cgi-bin <span class="built_in">log</span></span><br><span class="line"><span class="built_in">sudo</span> <span class="built_in">cp</span> /etc/mime.types ./</span><br><span class="line"><span class="built_in">mv</span> index.html www</span><br><span class="line"><span class="built_in">mv</span> test.cgi cgi-bin</span><br><span class="line"><span class="built_in">cp</span> ~/pics/oei.jpg ./www</span><br></pre></td></tr></table></figure>
+
+
+
+<p><img src="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20241017093215392.png" alt="image-20241017093215392"></p>
+<h5 id="8-ARM移植"><a href="#8-ARM移植" class="headerlink" title="8.ARM移植"></a>8.ARM移植</h5><p>PC:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cp ./arm64_boa ../rootfs #rootfs是我所设置的nfs挂载目录</span><br></pre></td></tr></table></figure>
+
+<p>虚拟ARM:</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mount -t nfs -o proto=tcp,nolock 10.0.0.1:/home/jym/code/linux/qemu/rootfs /mnt</span><br></pre></td></tr></table></figure>
+
+<p>将对应文件从&#x2F;mnt文件夹中拷贝到对应目录 可执行文件放在&#x2F;usr&#x2F;sbin boa对应文件放在&#x2F;etc&#x2F;boa</p>
+<p>第一遍运行出现如下问题：</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[root@FriendlyARM /]# ./boa</span><br><span class="line">gethostbyname:: Success</span><br></pre></td></tr></table></figure>
+
+<p>解决办法：</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">vim boa.conf <span class="comment">#添加如下内容即可</span></span><br><span class="line">ServerName www.mydomain.com</span><br></pre></td></tr></table></figure>
+
+<h5 id="9-运行测试"><a href="#9-运行测试" class="headerlink" title="9.运行测试"></a>9.运行测试</h5><p><img src="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20241017092231141.png" alt="image-20241017092231141"></p>
+<p>注意这里我们的虚拟开发板是10.0.0.2，在移植过程中，我先在x86平台上移植了boa，本地地址为127.0.0.1或者10.0.0.1都是如下所示画面，但是10.0.0.2却是原来的bo官方界面，后续移植的时候，我将虚拟平台上的boa重命名为boa_old，其中&#x2F;etc&#x2F;boa和&#x2F;usr&#x2F;sbin中都存在，然后将我生成的文件拷贝到&#x2F;etc&#x2F;boa中关掉之前的boa服务再次运行即可</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">ps | grep boa</span><br><span class="line"><span class="built_in">kill</span> 进程号</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20241017092608730.png" alt="image-20241017092608730"></p>
+<p><img src="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20241017092209961.png" alt="image-20241017092209961"></p>
+<h3 id="GoAhead"><a href="#GoAhead" class="headerlink" title="GoAhead"></a>GoAhead</h3><p><font color="red">后续移植</font></p>
+<h4 id="GoAhead概述"><a href="#GoAhead概述" class="headerlink" title="GoAhead概述"></a>GoAhead概述</h4><h4 id="GoAhead移植"><a href="#GoAhead移植" class="headerlink" title="GoAhead移植"></a>GoAhead移植</h4><h2 id="madplay"><a href="#madplay" class="headerlink" title="madplay"></a>madplay</h2><h3 id="madplay概述"><a href="#madplay概述" class="headerlink" title="madplay概述"></a>madplay概述</h3><p>Madplay是一个开源mp3解码库，对mp3解码算法做了很多优化</p>
+<p>单纯想要播放音乐，在linux下播放MP3文件，我们可以使用sox，运行下面语句即可</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">sudo apt-get install sox libsox-fmt-all</span><br><span class="line">play shanghaitan.mp3</span><br></pre></td></tr></table></figure>
+
+<h3 id="madplay-PC-Linux"><a href="#madplay-PC-Linux" class="headerlink" title="madplay-PC-Linux"></a>madplay-PC-Linux</h3><h4 id="1-解压源码包"><a href="#1-解压源码包" class="headerlink" title="1.解压源码包"></a>1.解压源码包</h4><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cd</span> /arm</span><br><span class="line"><span class="built_in">mkdir</span> madplay</span><br><span class="line"><span class="built_in">cd</span> madplay</span><br><span class="line"><span class="built_in">mkdir</span> tarball src-x86 src-arm target-x86 target-arm</span><br><span class="line"></span><br><span class="line"><span class="built_in">cd</span> tarball</span><br><span class="line"><span class="keyword">for</span> f <span class="keyword">in</span> $(<span class="built_in">ls</span> *.tar.gz); <span class="keyword">do</span> tar -zxvf <span class="variable">$f</span> –C ../src-x86; <span class="keyword">done</span></span><br><span class="line">或者：</span><br><span class="line"><span class="built_in">cd</span> tarball</span><br><span class="line">tar -zxvf zlib-1.2.3.tar.gz -C ../src-x86</span><br><span class="line">tar -zxvf libid3tag-0.15.1b.tar.gz -C ../src-x86</span><br><span class="line">tar -zxvf libmad-0.15.1b.tar.gz -C ../src-x86</span><br><span class="line">tar -zxvf madplay-0.15.2b.tar.gz -C ../src-x86</span><br></pre></td></tr></table></figure>
+
+<p>目录说明：<br>tarball 目录用来存放所有的源代码包<br>src-x86 目录用来存放 X86 版本的所有源代码文件<br>src-arm 目录用来存放 ARM 版本的所有源代码文件<br>target-x86 目录是 X86 版本的安装目录<br>target-arm 目录是 ARM 版本的安装目录<br>接下来把从网上下载到的源代码包放入 tarball 目录</p>
+<h4 id="2-编译madplay及它所依赖的库文件"><a href="#2-编译madplay及它所依赖的库文件" class="headerlink" title="2.编译madplay及它所依赖的库文件"></a>2.编译madplay及它所依赖的库文件</h4><h5 id="zlib"><a href="#zlib" class="headerlink" title="zlib"></a>zlib</h5><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">cd ../src-x86/zlib-1.2.3</span><br><span class="line">./configure --prefix=/home/jym/code/linux/qemu/madplay/target-x86</span><br><span class="line">make -j8</span><br><span class="line">make install</span><br></pre></td></tr></table></figure>
+
+<h5 id="libid3tag"><a href="#libid3tag" class="headerlink" title="libid3tag"></a>libid3tag</h5><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cd</span> ../libid3tag-0.15.1b</span><br><span class="line">./configure --prefix=/home/jym/code/linux/qemu/madplay/target-x86/  --disable-debugging --disable-shared --enable-static CPPFLAGS=-I/home/jym/code/linux/qemu/madplay/target-x86/include LDFLAGS=-L/home/jym/code/linux/qemu/madplay/target-x86/lib</span><br><span class="line">make -j8</span><br><span class="line">make install</span><br></pre></td></tr></table></figure>
+
+<p>其中，–disable-shared –enable-static 是指定为静态编译，不过这样并不能够进行静态编译.</p>
+<h5 id="libmad"><a href="#libmad" class="headerlink" title="libmad"></a>libmad</h5><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cd</span> ../libmad-0.15.1b</span><br><span class="line">./configure --prefix=/home/jym/code/linux/qemu/madplay/target-x86 --disable-debugging --disable-shared --enable-static CPPFLAGS=-I/home/jym/code/linux/qemu/madplay/target-x86/include LDFLAGS=-L/home/jym/code/linux/qemu/madplay/target-x86/lib</span><br></pre></td></tr></table></figure>
+
+<p>如果此时 make，make install 就会报错，说是”-fforce-mem”参数不能识别。打开当前目录下的 Makefile 文件，去掉里面出现的”-fforce-mem”，再进行后续操作</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">make -j8</span><br><span class="line">make install</span><br></pre></td></tr></table></figure>
+
+<h5 id="madplay-1"><a href="#madplay-1" class="headerlink" title="madplay"></a>madplay</h5><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cd</span> ../madplay-0.15.2b</span><br><span class="line">./configure --prefix=/home/jym/code/linux/qemu/madplay/target-x86 --disable-debugging --disable-shared --enable-static CPPFLAGS=-I/home/jym/code/linux/qemu/madplay/target-x86/include LDFLAGS=-L/home/jym/code/linux/qemu/madplay/target-x86/lib</span><br><span class="line">make -j8</span><br><span class="line">make install</span><br></pre></td></tr></table></figure>
+
+
+
+<p>但是，这样得到的是<strong>动态链接</strong>。如果在 madplay-0.15.2b 目录中执行gcc 命令，并且在最后加上-static，运行以后就可以得到<strong>静态链接</strong>的程序</p>
+<h5 id="静态链接"><a href="#静态链接" class="headerlink" title="静态链接"></a>静态链接</h5><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">gcc -Wall -O2 -fomit-frame-pointer -o madplay madplay.o getopt.o getopt1.o version.o resample.o filter.o tag.o crc.o rgain.o player.o audio.o audio_aiff.o audio_cdda.o audio_hex.o audio_null.o audio_raw.o audio_snd.o audio_wave.o audio_oss.o -L/home/jym/code/linux/qemu/madplay/target-x86/lib /home/jym/code/linux/qemu/madplay/target-x86/lib/libmad.a /home/jym/code/linux/qemu/madplay/target-x86/lib/libid3tag.a -lz -lm -static</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">ls</span> /home/jym/code/linux/qemu/madplay/target-x86/bin/</span><br><span class="line">abxtest  madplay</span><br></pre></td></tr></table></figure>
+
+<p>使用file查看madplay文件</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">jym@jym-virtual-machine:~/code/linux/qemu/madplay/target-x86/bin$ file madplay</span><br><span class="line">madplay: ELF 64-bit LSB shared object, x86-64, version 1 (SYSV), dynamically linked, interpreter /lib64/ld-linux-x86-64.so.2, BuildID[sha1]=16f52c3b88a3bce95f5274f8d6b43d15b03fca25, <span class="keyword">for</span> GNU/Linux 3.2.0, not stripped</span><br><span class="line"></span><br><span class="line">jym@jym-virtual-machine:~/code/linux/qemu/madplay/src-x86/madplay-0.15.2b$ file madplay</span><br><span class="line">madplay: ELF 64-bit LSB executable, x86-64, version 1 (GNU/Linux), statically linked, BuildID[sha1]=e5deaf02bfed1309a9f82f53f4c89edcd0e45070, <span class="keyword">for</span> GNU/Linux 3.2.0, not stripped</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20241016232303443.png" alt="image-20241016232303443"></p>
+<h4 id="3-运行测试"><a href="#3-运行测试" class="headerlink" title="3.运行测试"></a>3.运行测试</h4><p>移植完成后还有一个问题需要处理，直接运行会报错如下：</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">jym@jym-virtual-machine:~/code/linux/qemu/madplay/target-x86/bin$ ./madplay shanghaitan.mp3</span><br><span class="line">MPEG Audio Decoder 0.15.2 (beta) - Copyright (C) 2000-2004 Robert Leslie et al.</span><br><span class="line">audio: /dev/dsp: 没有那个文件或目录</span><br></pre></td></tr></table></figure>
+
+<p>原因是madplay使用oss建构，在网上查找了一些资料，可以用alsa支持oss架构，<font color="red">后续我再探索</font>,root 账号下不能用audio，切记！</p>
+<p>简单解决方法如下：使用madplay解码再使用aplay播放</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">./madplay -o wav:- shanghaitan.mp3 | aplay</span><br></pre></td></tr></table></figure>
+
+<p>最终效果如图所示</p>
+<p><img src="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20241016233558824.png" alt="image-20241016233558824"></p>
+<h4 id="4-构建脚本文件"><a href="#4-构建脚本文件" class="headerlink" title="4.构建脚本文件"></a>4.构建脚本文件</h4><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#!/bin/sh</span></span><br><span class="line"><span class="comment"># This build script is for madplay under PC-Linux</span></span><br><span class="line">MADPLAY_DIR=/home/jym/code/linux/qemu/madplay</span><br><span class="line">TARBALL_DIR=<span class="variable">$MADPLAY_DIR</span>/tarball</span><br><span class="line">SRC_DIR=<span class="variable">$MADPLAY_DIR</span>/src-x86</span><br><span class="line">TARGET_DIR=<span class="variable">$MADPLAY_DIR</span>/target-x86</span><br><span class="line"></span><br><span class="line">tar -zxvf <span class="variable">$TARBALL_DIR</span>/zlib-1.2.3.tar.gz -C <span class="variable">$SRC_DIR</span></span><br><span class="line">tar -zxvf <span class="variable">$TARBALL_DIR</span>/libid3tag-0.15.1b.tar.gz -C <span class="variable">$SRC_DIR</span></span><br><span class="line">tar -zxvf <span class="variable">$TARBALL_DIR</span>/libmad-0.15.1b.tar.gz -C <span class="variable">$SRC_DIR</span></span><br><span class="line">tar -zxvf <span class="variable">$TARBALL_DIR</span>/madplay-0.15.2b.tar.gz -C <span class="variable">$SRC_DIR</span></span><br><span class="line"><span class="comment"># for f in $(ls $TARBALL_DIR/*.tar.gz); do tar -zxvf $f -C $SRC_DIR; done</span></span><br><span class="line"><span class="built_in">cd</span> <span class="variable">$SRC_DIR</span>/zlib-1.2.3</span><br><span class="line">./configure --prefix=<span class="variable">$TARGET_DIR</span></span><br><span class="line">make</span><br><span class="line">make install</span><br><span class="line"></span><br><span class="line"><span class="built_in">cd</span> <span class="variable">$SRC_DIR</span>/libid3tag-0.15.1b</span><br><span class="line">./configure --prefix=<span class="variable">$TARGET_DIR</span> --disable-debugging --disable-shared --enable-static CPPFLAGS=-I<span class="variable">$TARGET_DIR</span>/include LDFLAGS=-L<span class="variable">$TARGET_DIR</span>/lib</span><br><span class="line">make</span><br><span class="line">make install</span><br><span class="line"></span><br><span class="line"><span class="built_in">cd</span> <span class="variable">$SRC_DIR</span>/libmad-0.15.1b</span><br><span class="line">./configure --prefix=<span class="variable">$TARGET_DIR</span> --disable-debugging --disable-shared --enable-static CPPFLAGS=-I<span class="variable">$TARGET_DIR</span>/include LDFLAGS=-L<span class="variable">$TARGET_DIR</span>/lib</span><br><span class="line"></span><br><span class="line">sed <span class="string">&#x27;s/-fforce-mem //g&#x27;</span> Makefile &gt; Makefile.bak</span><br><span class="line"><span class="built_in">mv</span> Makefile.bak Makefile</span><br><span class="line"></span><br><span class="line">make</span><br><span class="line">make install</span><br><span class="line"></span><br><span class="line"><span class="built_in">cd</span> <span class="variable">$SRC_DIR</span>/madplay-0.15.2b</span><br><span class="line">./configure --prefix=<span class="variable">$TARGET_DIR</span> --disable-debugging --disable-shared --enable-static CPPFLAGS=-I<span class="variable">$TARGET_DIR</span>/include LDFLAGS=-L<span class="variable">$TARGET_DIR</span>/lib</span><br><span class="line">make</span><br><span class="line">make install</span><br><span class="line"></span><br><span class="line">gcc -Wall -O2 -fomit-frame-pointer -o madplay-s madplay.o getopt.o getopt1.o version.o resample.o filter.o tag.o crc.o rgain.o player.o audio.o audio_aiff.o audio_cdda.o audio_hex.o audio_null.o audio_raw.o audio_snd.o audio_wave.o audio_oss.o -L<span class="variable">$TARGET_DIR</span>/lib <span class="variable">$TARGET_DIR</span>/lib/libmad.a <span class="variable">$TARGET_DIR</span>/lib/libid3tag.a -lz -lm -static</span><br><span class="line"></span><br><span class="line"><span class="built_in">mv</span> madplay madplay-d</span><br><span class="line"><span class="built_in">mv</span> <span class="variable">$TARGET_DIR</span>/bin/madplay <span class="variable">$TARGET_DIR</span>/bin/madplay-d</span><br><span class="line"><span class="built_in">cp</span> -a madplay-s <span class="variable">$TARGET_DIR</span>/bin</span><br></pre></td></tr></table></figure>
+
+
+
+<h3 id="madplay-ARM-Linux"><a href="#madplay-ARM-Linux" class="headerlink" title="madplay-ARM-Linux"></a>madplay-ARM-Linux</h3><h4 id="1-构建脚本"><a href="#1-构建脚本" class="headerlink" title="1.构建脚本"></a>1.构建脚本</h4><p>移植ARM-Linux版本和上述PC端流程类似，使用交叉编译器即可，这里给出编译脚本，一键运行即可</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#!/bin/sh</span></span><br><span class="line"><span class="comment"># This build script is for madplay under ARM-Linux</span></span><br><span class="line">MADPLAY_DIR=/home/jym/code/linux/qemu/madplay</span><br><span class="line">TARBALL_DIR=<span class="variable">$MADPLAY_DIR</span>/tarball</span><br><span class="line">SRC_DIR=<span class="variable">$MADPLAY_DIR</span>/src-arm</span><br><span class="line">TARGET_DIR=<span class="variable">$MADPLAY_DIR</span>/target-arm</span><br><span class="line">tar -zxvf <span class="variable">$TARBALL_DIR</span>/zlib-1.2.3.tar.gz -C <span class="variable">$SRC_DIR</span></span><br><span class="line">tar -zxvf <span class="variable">$TARBALL_DIR</span>/libid3tag-0.15.1b.tar.gz -C <span class="variable">$SRC_DIR</span></span><br><span class="line">tar -zxvf <span class="variable">$TARBALL_DIR</span>/libmad-0.15.1b.tar.gz -C <span class="variable">$SRC_DIR</span></span><br><span class="line">tar -zxvf <span class="variable">$TARBALL_DIR</span>/madplay-0.15.2b.tar.gz -C <span class="variable">$SRC_DIR</span></span><br><span class="line"><span class="comment"># for f in $(ls $TARBALL_DIR/*.tar.gz); do tar -zxvf $f -C $SRC_DIR; done</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">export</span> CC=arm-linux-gcc</span><br><span class="line"><span class="built_in">cd</span> <span class="variable">$SRC_DIR</span>/zlib-1.2.3</span><br><span class="line">./configure --prefix=<span class="variable">$TARGET_DIR</span></span><br><span class="line">make -j8</span><br><span class="line">make install</span><br><span class="line"></span><br><span class="line"><span class="built_in">cd</span> <span class="variable">$SRC_DIR</span>/libid3tag-0.15.1b</span><br><span class="line">./configure --host=arm-linux --prefix=<span class="variable">$TARGET_DIR</span> --disable-debugging --disable-shared --enable-static CPPFLAGS=-I<span class="variable">$TARGET_DIR</span>/include LDFLAGS=-L<span class="variable">$TARGET_DIR</span>/lib</span><br><span class="line">make -j8</span><br><span class="line">make install</span><br><span class="line"></span><br><span class="line"><span class="built_in">cd</span> <span class="variable">$SRC_DIR</span>/libmad-0.15.1b</span><br><span class="line">./configure --host=arm-linux --prefix=<span class="variable">$TARGET_DIR</span> --disable-debugging --disable-shared --enable-static CPPFLAGS=-I<span class="variable">$TARGET_DIR</span>/include LDFLAGS=-L<span class="variable">$TARGET_DIR</span>/lib</span><br><span class="line"></span><br><span class="line">sed <span class="string">&#x27;s/-fforce-mem //g&#x27;</span> Makefile &gt; Makefile.bak</span><br><span class="line"><span class="built_in">mv</span> Makefile.bak Makefile</span><br><span class="line"></span><br><span class="line">make -j8</span><br><span class="line">make install</span><br><span class="line"></span><br><span class="line"><span class="built_in">cd</span> <span class="variable">$SRC_DIR</span>/madplay-0.15.2b</span><br><span class="line">./configure --host=arm-linux --prefix=<span class="variable">$TARGET_DIR</span> --disable-debugging --disable-shared --enable-static CPPFLAGS=-I<span class="variable">$TARGET_DIR</span>/include LDFLAGS=-L<span class="variable">$TARGET_DIR</span>/lib</span><br><span class="line">make -j8</span><br><span class="line">make install</span><br><span class="line"></span><br><span class="line">arm-linux-gcc -Wall -O2 -fomit-frame-pointer -o madplay-s madplay.o getopt.o getopt1.o version.o resample.o filter.o tag.o crc.o rgain.o player.o audio.o audio_aiff.o audio_cdda.o audio_hex.o audio_null.o audio_raw.o audio_snd.o audio_wave.o audio_oss.o -L<span class="variable">$TARGET_DIR</span>/lib <span class="variable">$TARGET_DIR</span>/lib/libmad.a <span class="variable">$TARGET_DIR</span>/lib/libid3tag.a -lz -lm -static</span><br><span class="line"></span><br><span class="line"><span class="built_in">mv</span> madplay madplay-d</span><br><span class="line"><span class="built_in">mv</span> <span class="variable">$TARGET_DIR</span>/bin/madplay <span class="variable">$TARGET_DIR</span>/bin/madplay-d</span><br><span class="line"><span class="built_in">cp</span> -a madplay-s <span class="variable">$TARGET_DIR</span>/bin</span><br></pre></td></tr></table></figure>
+
+<p>这里经过验证，是可以不报错运行完毕的，生成的相关文件信息如下：</p>
+<p><img src="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20241017090810624.png" alt="image-20241017090810624">!<img src="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20241017090719513.png" alt="image-20241017090719513"></p>
+<h4 id="2-运行验证"><a href="#2-运行验证" class="headerlink" title="2.运行验证"></a>2.运行验证</h4><p>启动虚拟arm平台</p>
+<p><img src="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20241017091028207.png" alt="image-20241017091028207"></p>
+<p>音乐成功响起</p>
+<p><img src="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20241017091252686.png" alt="image-20241017091252686"></p>
+<p>生成的相关信息如下</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br></pre></td><td class="code"><pre><span class="line">MPEG Audio Decoder 0.15.2 (beta) - Copyright (C) 2000-2004 Robert Leslie et al.</span><br><span class="line">          Title: ▒Ϻ▒̲</span><br><span class="line">         Artist: Ҷ▒▒▒▒</span><br><span class="line">           Year: 2000</span><br><span class="line">          Genre: Goa</span><br><span class="line">&lt;3&gt;__free_from_pool: freeing wrong coherent size from pool</span><br><span class="line">__free_from_pool: freeing wrong coherent size from pool</span><br><span class="line">[&lt;800151e8&gt;] (unwind_backtrace+0x0/0xf0) from [&lt;800189c4&gt;] (arm_dma_free+0x188/0x1b0)</span><br><span class="line">[&lt;800151e8&gt;] (unwind_backtrace+0x0/0xf0) from [&lt;800189c4&gt;] (arm_dma_free+0x188/0x1b0)</span><br><span class="line">[&lt;800189c4&gt;] (arm_dma_free+0x188/0x1b0) from [&lt;8027dfa4&gt;] (snd_dma_free_pages+0xb4/0xc8)</span><br><span class="line">[&lt;800189c4&gt;] (arm_dma_free+0x188/0x1b0) from [&lt;8027dfa4&gt;] (snd_dma_free_pages+0xb4/0xc8)</span><br><span class="line">[&lt;8027dfa4&gt;] (snd_dma_free_pages+0xb4/0xc8) from [&lt;8027d4ac&gt;] (snd_pcm_lib_free_pages+0x2c/0x54)</span><br><span class="line">[&lt;8027dfa4&gt;] (snd_dma_free_pages+0xb4/0xc8) from [&lt;8027d4ac&gt;] (snd_pcm_lib_free_pages+0x2c/0x54)</span><br><span class="line">[&lt;8027d4ac&gt;] (snd_pcm_lib_free_pages+0x2c/0x54) from [&lt;80292144&gt;] (aaci_pcm_hw_free+0x40/0x5c)</span><br><span class="line">[&lt;8027d4ac&gt;] (snd_pcm_lib_free_pages+0x2c/0x54) from [&lt;80292144&gt;] (aaci_pcm_hw_free+0x40/0x5c)</span><br><span class="line">[&lt;80292144&gt;] (aaci_pcm_hw_free+0x40/0x5c) from [&lt;80292180&gt;] (aaci_pcm_hw_params+0x20/0xd4)</span><br><span class="line">[&lt;80292144&gt;] (aaci_pcm_hw_free+0x40/0x5c) from [&lt;80292180&gt;] (aaci_pcm_hw_params+0x20/0xd4)</span><br><span class="line">[&lt;80292180&gt;] (aaci_pcm_hw_params+0x20/0xd4) from [&lt;80276ce4&gt;] (snd_pcm_hw_params+0x114/0x3e0)</span><br><span class="line">[&lt;80292180&gt;] (aaci_pcm_hw_params+0x20/0xd4) from [&lt;80276ce4&gt;] (snd_pcm_hw_params+0x114/0x3e0)</span><br><span class="line">[&lt;80276ce4&gt;] (snd_pcm_hw_params+0x114/0x3e0) from [&lt;80277984&gt;] (snd_pcm_common_ioctl1+0x5a0/0x10a4)</span><br><span class="line">[&lt;80276ce4&gt;] (snd_pcm_hw_params+0x114/0x3e0) from [&lt;80277984&gt;] (snd_pcm_common_ioctl1+0x5a0/0x10a4)</span><br><span class="line">[&lt;80277984&gt;] (snd_pcm_common_ioctl1+0x5a0/0x10a4) from [&lt;80278990&gt;] (snd_pcm_playback_ioctl1+0x38/0x4c0)</span><br><span class="line">[&lt;80277984&gt;] (snd_pcm_common_ioctl1+0x5a0/0x10a4) from [&lt;80278990&gt;] (snd_pcm_playback_ioctl1+0x38/0x4c0)</span><br><span class="line">[&lt;80278990&gt;] (snd_pcm_playback_ioctl1+0x38/0x4c0) from [&lt;80278e84&gt;] (snd_pcm_kernel_ioctl+0x40/0x6c)</span><br><span class="line">[&lt;80278990&gt;] (snd_pcm_playback_ioctl1+0x38/0x4c0) from [&lt;80278e84&gt;] (snd_pcm_kernel_ioctl+0x40/0x6c)</span><br><span class="line">[&lt;80278e84&gt;] (snd_pcm_kernel_ioctl+0x40/0x6c) from [&lt;80282730&gt;] (snd_pcm_oss_change_params+0x818/0xcc0)</span><br><span class="line">[&lt;80278e84&gt;] (snd_pcm_kernel_ioctl+0x40/0x6c) from [&lt;80282730&gt;] (snd_pcm_oss_change_params+0x818/0xcc0)</span><br><span class="line">[&lt;80282730&gt;] (snd_pcm_oss_change_params+0x818/0xcc0) from [&lt;80283214&gt;] (snd_pcm_oss_get_active_substream+0x68/0x74)</span><br><span class="line">[&lt;80282730&gt;] (snd_pcm_oss_change_params+0x818/0xcc0) from [&lt;80283214&gt;] (snd_pcm_oss_get_active_substream+0x68/0x74)</span><br><span class="line">[&lt;80283214&gt;] (snd_pcm_oss_get_active_substream+0x68/0x74) from [&lt;80283258&gt;] (snd_pcm_oss_get_format+0x10/0x28)</span><br><span class="line">[&lt;80283214&gt;] (snd_pcm_oss_get_active_substream+0x68/0x74) from [&lt;80283258&gt;] (snd_pcm_oss_get_format+0x10/0x28)</span><br><span class="line">[&lt;80283258&gt;] (snd_pcm_oss_get_format+0x10/0x28) from [&lt;80283ed8&gt;] (snd_pcm_oss_ioctl+0x438/0xd2c)</span><br><span class="line">[&lt;80283258&gt;] (snd_pcm_oss_get_format+0x10/0x28) from [&lt;80283ed8&gt;] (snd_pcm_oss_ioctl+0x438/0xd2c)</span><br><span class="line">[&lt;80283ed8&gt;] (snd_pcm_oss_ioctl+0x438/0xd2c) from [&lt;800c6c9c&gt;] (do_vfs_ioctl+0x80/0x5b0)</span><br><span class="line">[&lt;80283ed8&gt;] (snd_pcm_oss_ioctl+0x438/0xd2c) from [&lt;800c6c9c&gt;] (do_vfs_ioctl+0x80/0x5b0)</span><br><span class="line">[&lt;800c6c9c&gt;] (do_vfs_ioctl+0x80/0x5b0) from [&lt;800c7204&gt;] (sys_ioctl+0x38/0x60)</span><br><span class="line">[&lt;800c6c9c&gt;] (do_vfs_ioctl+0x80/0x5b0) from [&lt;800c7204&gt;] (sys_ioctl+0x38/0x60)</span><br><span class="line">[&lt;800c7204&gt;] (sys_ioctl+0x38/0x60) from [&lt;8000e2c0&gt;] (ret_fast_syscall+0x0/0x30)</span><br><span class="line">[&lt;800c7204&gt;] (sys_ioctl+0x38/0x60) from [&lt;8000e2c0&gt;] (ret_fast_syscall+0x0/0x30)</span><br><span class="line">&lt;3&gt;__free_from_pool: freeing wrong coherent size from pool</span><br><span class="line">__free_from_pool: freeing wrong coherent size from pool</span><br><span class="line">[&lt;800151e8&gt;] (unwind_backtrace+0x0/0xf0) from [&lt;800189c4&gt;] (arm_dma_free+0x188/0x1b0)</span><br><span class="line">[&lt;800151e8&gt;] (unwind_backtrace+0x0/0xf0) from [&lt;800189c4&gt;] (arm_dma_free+0x188/0x1b0)</span><br><span class="line">[&lt;800189c4&gt;] (arm_dma_free+0x188/0x1b0) from [&lt;8027dfa4&gt;] (snd_dma_free_pages+0xb4/0xc8)</span><br><span class="line">[&lt;800189c4&gt;] (arm_dma_free+0x188/0x1b0) from [&lt;8027dfa4&gt;] (snd_dma_free_pages+0xb4/0xc8)</span><br><span class="line">[&lt;8027dfa4&gt;] (snd_dma_free_pages+0xb4/0xc8) from [&lt;8027d4ac&gt;] (snd_pcm_lib_free_pages+0x2c/0x54)</span><br><span class="line">[&lt;8027dfa4&gt;] (snd_dma_free_pages+0xb4/0xc8) from [&lt;8027d4ac&gt;] (snd_pcm_lib_free_pages+0x2c/0x54)</span><br><span class="line">[&lt;8027d4ac&gt;] (snd_pcm_lib_free_pages+0x2c/0x54) from [&lt;80292144&gt;] (aaci_pcm_hw_free+0x40/0x5c)</span><br><span class="line">[&lt;8027d4ac&gt;] (snd_pcm_lib_free_pages+0x2c/0x54) from [&lt;80292144&gt;] (aaci_pcm_hw_free+0x40/0x5c)</span><br><span class="line">[&lt;80292144&gt;] (aaci_pcm_hw_free+0x40/0x5c) from [&lt;80292180&gt;] (aaci_pcm_hw_params+0x20/0xd4)</span><br><span class="line">[&lt;80292144&gt;] (aaci_pcm_hw_free+0x40/0x5c) from [&lt;80292180&gt;] (aaci_pcm_hw_params+0x20/0xd4)</span><br><span class="line">[&lt;80292180&gt;] (aaci_pcm_hw_params+0x20/0xd4) from [&lt;80276ce4&gt;] (snd_pcm_hw_params+0x114/0x3e0)</span><br><span class="line">[&lt;80292180&gt;] (aaci_pcm_hw_params+0x20/0xd4) from [&lt;80276ce4&gt;] (snd_pcm_hw_params+0x114/0x3e0)</span><br><span class="line">[&lt;80276ce4&gt;] (snd_pcm_hw_params+0x114/0x3e0) from [&lt;80277984&gt;] (snd_pcm_common_ioctl1+0x5a0/0x10a4)</span><br><span class="line">[&lt;80276ce4&gt;] (snd_pcm_hw_params+0x114/0x3e0) from [&lt;80277984&gt;] (snd_pcm_common_ioctl1+0x5a0/0x10a4)</span><br><span class="line">[&lt;80277984&gt;] (snd_pcm_common_ioctl1+0x5a0/0x10a4) from [&lt;80278990&gt;] (snd_pcm_playback_ioctl1+0x38/0x4c0)</span><br><span class="line">[&lt;80277984&gt;] (snd_pcm_common_ioctl1+0x5a0/0x10a4) from [&lt;80278990&gt;] (snd_pcm_playback_ioctl1+0x38/0x4c0)</span><br><span class="line">[&lt;80278990&gt;] (snd_pcm_playback_ioctl1+0x38/0x4c0) from [&lt;80278e84&gt;] (snd_pcm_kernel_ioctl+0x40/0x6c)</span><br><span class="line">[&lt;80278990&gt;] (snd_pcm_playback_ioctl1+0x38/0x4c0) from [&lt;80278e84&gt;] (snd_pcm_kernel_ioctl+0x40/0x6c)</span><br><span class="line">[&lt;80278e84&gt;] (snd_pcm_kernel_ioctl+0x40/0x6c) from [&lt;80282730&gt;] (snd_pcm_oss_change_params+0x818/0xcc0)</span><br><span class="line">[&lt;80278e84&gt;] (snd_pcm_kernel_ioctl+0x40/0x6c) from [&lt;80282730&gt;] (snd_pcm_oss_change_params+0x818/0xcc0)</span><br><span class="line">[&lt;80282730&gt;] (snd_pcm_oss_change_params+0x818/0xcc0) from [&lt;80283214&gt;] (snd_pcm_oss_get_active_substream+0x68/0x74)</span><br><span class="line">[&lt;80282730&gt;] (snd_pcm_oss_change_params+0x818/0xcc0) from [&lt;80283214&gt;] (snd_pcm_oss_get_active_substream+0x68/0x74)</span><br><span class="line">[&lt;80283214&gt;] (snd_pcm_oss_get_active_substream+0x68/0x74) from [&lt;80283280&gt;] (snd_pcm_oss_get_channels+0x10/0x28)</span><br><span class="line">[&lt;80283214&gt;] (snd_pcm_oss_get_active_substream+0x68/0x74) from [&lt;80283280&gt;] (snd_pcm_oss_get_channels+0x10/0x28)</span><br><span class="line">[&lt;80283280&gt;] (snd_pcm_oss_get_channels+0x10/0x28) from [&lt;80283fb4&gt;] (snd_pcm_oss_ioctl+0x514/0xd2c)</span><br><span class="line">[&lt;80283280&gt;] (snd_pcm_oss_get_channels+0x10/0x28) from [&lt;80283fb4&gt;] (snd_pcm_oss_ioctl+0x514/0xd2c)</span><br><span class="line">[&lt;80283fb4&gt;] (snd_pcm_oss_ioctl+0x514/0xd2c) from [&lt;800c6c9c&gt;] (do_vfs_ioctl+0x80/0x5b0)</span><br><span class="line">[&lt;80283fb4&gt;] (snd_pcm_oss_ioctl+0x514/0xd2c) from [&lt;800c6c9c&gt;] (do_vfs_ioctl+0x80/0x5b0)</span><br><span class="line">[&lt;800c6c9c&gt;] (do_vfs_ioctl+0x80/0x5b0) from [&lt;800c7204&gt;] (sys_ioctl+0x38/0x60)</span><br><span class="line">[&lt;800c6c9c&gt;] (do_vfs_ioctl+0x80/0x5b0) from [&lt;800c7204&gt;] (sys_ioctl+0x38/0x60)</span><br><span class="line">[&lt;800c7204&gt;] (sys_ioctl+0x38/0x60) from [&lt;8000e2c0&gt;] (ret_fast_syscall+0x0/0x30)</span><br><span class="line">[&lt;800c7204&gt;] (sys_ioctl+0x38/0x60) from [&lt;8000e2c0&gt;] (ret_fast_syscall+0x0/0x30)</span><br><span class="line">&lt;3&gt;__free_from_pool: freeing wrong coherent size from pool</span><br><span class="line">__free_from_pool: freeing wrong coherent size from pool</span><br><span class="line">[&lt;800151e8&gt;] (unwind_backtrace+0x0/0xf0) from [&lt;800189c4&gt;] (arm_dma_free+0x188/0x1b0)</span><br><span class="line">[&lt;800151e8&gt;] (unwind_backtrace+0x0/0xf0) from [&lt;800189c4&gt;] (arm_dma_free+0x188/0x1b0)</span><br><span class="line">[&lt;800189c4&gt;] (arm_dma_free+0x188/0x1b0) from [&lt;8027dfa4&gt;] (snd_dma_free_pages+0xb4/0xc8)</span><br><span class="line">[&lt;800189c4&gt;] (arm_dma_free+0x188/0x1b0) from [&lt;8027dfa4&gt;] (snd_dma_free_pages+0xb4/0xc8)</span><br><span class="line">[&lt;8027dfa4&gt;] (snd_dma_free_pages+0xb4/0xc8) from [&lt;8027d4ac&gt;] (snd_pcm_lib_free_pages+0x2c/0x54)</span><br><span class="line">[&lt;8027dfa4&gt;] (snd_dma_free_pages+0xb4/0xc8) from [&lt;8027d4ac&gt;] (snd_pcm_lib_free_pages+0x2c/0x54)</span><br><span class="line">[&lt;8027d4ac&gt;] (snd_pcm_lib_free_pages+0x2c/0x54) from [&lt;80292144&gt;] (aaci_pcm_hw_free+0x40/0x5c)</span><br><span class="line">[&lt;8027d4ac&gt;] (snd_pcm_lib_free_pages+0x2c/0x54) from [&lt;80292144&gt;] (aaci_pcm_hw_free+0x40/0x5c)</span><br><span class="line">[&lt;80292144&gt;] (aaci_pcm_hw_free+0x40/0x5c) from [&lt;80292180&gt;] (aaci_pcm_hw_params+0x20/0xd4)</span><br><span class="line">[&lt;80292144&gt;] (aaci_pcm_hw_free+0x40/0x5c) from [&lt;80292180&gt;] (aaci_pcm_hw_params+0x20/0xd4)</span><br><span class="line">[&lt;80292180&gt;] (aaci_pcm_hw_params+0x20/0xd4) from [&lt;80276ce4&gt;] (snd_pcm_hw_params+0x114/0x3e0)</span><br><span class="line">[&lt;80292180&gt;] (aaci_pcm_hw_params+0x20/0xd4) from [&lt;80276ce4&gt;] (snd_pcm_hw_params+0x114/0x3e0)</span><br><span class="line">[&lt;80276ce4&gt;] (snd_pcm_hw_params+0x114/0x3e0) from [&lt;80277984&gt;] (snd_pcm_common_ioctl1+0x5a0/0x10a4)</span><br><span class="line">[&lt;80276ce4&gt;] (snd_pcm_hw_params+0x114/0x3e0) from [&lt;80277984&gt;] (snd_pcm_common_ioctl1+0x5a0/0x10a4)</span><br><span class="line">[&lt;80277984&gt;] (snd_pcm_common_ioctl1+0x5a0/0x10a4) from [&lt;80278990&gt;] (snd_pcm_playback_ioctl1+0x38/0x4c0)</span><br><span class="line">[&lt;80277984&gt;] (snd_pcm_common_ioctl1+0x5a0/0x10a4) from [&lt;80278990&gt;] (snd_pcm_playback_ioctl1+0x38/0x4c0)</span><br><span class="line">[&lt;80278990&gt;] (snd_pcm_playback_ioctl1+0x38/0x4c0) from [&lt;80278e84&gt;] (snd_pcm_kernel_ioctl+0x40/0x6c)</span><br><span class="line">[&lt;80278990&gt;] (snd_pcm_playback_ioctl1+0x38/0x4c0) from [&lt;80278e84&gt;] (snd_pcm_kernel_ioctl+0x40/0x6c)</span><br><span class="line">[&lt;80278e84&gt;] (snd_pcm_kernel_ioctl+0x40/0x6c) from [&lt;80282730&gt;] (snd_pcm_oss_change_params+0x818/0xcc0)</span><br><span class="line">[&lt;80278e84&gt;] (snd_pcm_kernel_ioctl+0x40/0x6c) from [&lt;80282730&gt;] (snd_pcm_oss_change_params+0x818/0xcc0)</span><br><span class="line">[&lt;80282730&gt;] (snd_pcm_oss_change_params+0x818/0xcc0) from [&lt;80283214&gt;] (snd_pcm_oss_get_active_substream+0x68/0x74)</span><br><span class="line">[&lt;80282730&gt;] (snd_pcm_oss_change_params+0x818/0xcc0) from [&lt;80283214&gt;] (snd_pcm_oss_get_active_substream+0x68/0x74)</span><br><span class="line">[&lt;80283214&gt;] (snd_pcm_oss_get_active_substream+0x68/0x74) from [&lt;80283230&gt;] (snd_pcm_oss_get_rate+0x10/0x28)</span><br><span class="line">[&lt;80283214&gt;] (snd_pcm_oss_get_active_substream+0x68/0x74) from [&lt;80283230&gt;] (snd_pcm_oss_get_rate+0x10/0x28)</span><br><span class="line">[&lt;80283230&gt;] (snd_pcm_oss_get_rate+0x10/0x28) from [&lt;80284658&gt;] (snd_pcm_oss_ioctl+0xbb8/0xd2c)</span><br><span class="line">[&lt;80283230&gt;] (snd_pcm_oss_get_rate+0x10/0x28) from [&lt;80284658&gt;] (snd_pcm_oss_ioctl+0xbb8/0xd2c)</span><br><span class="line">[&lt;80284658&gt;] (snd_pcm_oss_ioctl+0xbb8/0xd2c) from [&lt;800c6c9c&gt;] (do_vfs_ioctl+0x80/0x5b0)</span><br><span class="line">[&lt;80284658&gt;] (snd_pcm_oss_ioctl+0xbb8/0xd2c) from [&lt;800c6c9c&gt;] (do_vfs_ioctl+0x80/0x5b0)</span><br><span class="line">[&lt;800c6c9c&gt;] (do_vfs_ioctl+0x80/0x5b0) from [&lt;800c7204&gt;] (sys_ioctl+0x38/0x60)</span><br><span class="line">[&lt;800c6c9c&gt;] (do_vfs_ioctl+0x80/0x5b0) from [&lt;800c7204&gt;] (sys_ioctl+0x38/0x60)</span><br><span class="line">[&lt;800c7204&gt;] (sys_ioctl+0x38/0x60) from [&lt;8000e2c0&gt;] (ret_fast_syscall+0x0/0x30)</span><br><span class="line">[&lt;800c7204&gt;] (sys_ioctl+0x38/0x60) from [&lt;8000e2c0&gt;] (ret_fast_syscall+0x0/0x30)</span><br></pre></td></tr></table></figure>
+
+
+
+<h2 id="iconv"><a href="#iconv" class="headerlink" title="iconv"></a>iconv</h2><p><font color="red">后续移植</font></p>
+<h3 id="iconv概述"><a href="#iconv概述" class="headerlink" title="iconv概述"></a>iconv概述</h3><p>iconv是字符编码转换库</p>
+<h3 id="iconv应用"><a href="#iconv应用" class="headerlink" title="iconv应用"></a>iconv应用</h3><h2 id="FrameBuffer"><a href="#FrameBuffer" class="headerlink" title="FrameBuffer"></a>FrameBuffer</h2><p><font color="red">后续移植</font></p>
+<h3 id="FrameBuffer概述"><a href="#FrameBuffer概述" class="headerlink" title="FrameBuffer概述"></a>FrameBuffer概述</h3><p><strong>framebuffer简介</strong></p>
+<p><img src="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20241015225141191.png" alt="image-20241015225141191"></p>
+<p><strong>FrameBuffer编程模型</strong></p>
+<p><img src="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20241015225312473.png" alt="image-20241015225312473"></p>
+<p><strong>对framebuffer设备操作</strong></p>
+<p><img src="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20241015225538409.png" alt="image-20241015225538409"></p>
+<p><strong>操作framebuffer步骤</strong></p>
+<p><img src="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20241015225711248.png" alt="image-20241015225711248"></p>
+<p><strong>framebuffer信息结构</strong></p>
+<h3 id="framebuffer实战"><a href="#framebuffer实战" class="headerlink" title="framebuffer实战"></a>framebuffer实战</h3>
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E5%B5%8C%E5%85%A5%E5%BC%8F/" rel="tag"># 嵌入式</a>
+              <a href="/tags/Linux%E7%B3%BB%E7%BB%9F/" rel="tag"># Linux系统</a>
+              <a href="/tags/STM32/" rel="tag"># STM32</a>
+              <a href="/tags/FreeRTOS/" rel="tag"># FreeRTOS</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2024/09/08/csapp%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/" rel="prev" title="csapp学习笔记">
+      <i class="fa fa-chevron-left"></i> csapp学习笔记
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2024/10/13/linux%E4%BD%BF%E7%94%A8GCC%E7%BC%96%E8%AF%91STM32%E5%B9%B6%E7%A7%BB%E6%A4%8DFreeRTOS/" rel="next" title="linux使用GCC编译STM32并移植FreeRTOS">
+      linux使用GCC编译STM32并移植FreeRTOS <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#webserver"><span class="nav-number">1.</span> <span class="nav-text">webserver</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#boa"><span class="nav-number">1.1.</span> <span class="nav-text">boa</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#boa%E6%A6%82%E8%BF%B0"><span class="nav-number">1.1.1.</span> <span class="nav-text">boa概述</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#boa%E7%A7%BB%E6%A4%8D"><span class="nav-number">1.1.2.</span> <span class="nav-text">boa移植</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#1-%E8%A7%A3%E5%8E%8B%E6%BA%90%E4%BB%A3%E7%A0%81"><span class="nav-number">1.1.2.1.</span> <span class="nav-text">1.解压源代码</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#2-%E7%94%9F%E6%88%90Makefile"><span class="nav-number">1.1.2.2.</span> <span class="nav-text">2.生成Makefile</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#3-%E7%BC%96%E8%AF%91%E6%BA%90%E4%BB%A3%E7%A0%81"><span class="nav-number">1.1.2.3.</span> <span class="nav-text">3.编译源代码</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#4-%E4%BF%AE%E6%94%B9%E6%BA%90%E4%BB%A3%E7%A0%81-%E4%BF%AE%E6%94%B9src-compat-h"><span class="nav-number">1.1.2.4.</span> <span class="nav-text">4.修改源代码 修改src&#x2F;compat.h</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#5-%E7%BC%96%E8%AF%91-make-clean-make-j8%E7%94%9F%E6%88%90boa%E6%96%87%E4%BB%B6"><span class="nav-number">1.1.2.5.</span> <span class="nav-text">5.编译 make clean &amp;&amp; make -j8生成boa文件</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#6-%E6%96%B0%E5%BB%BAindex-html%E5%92%8Ctest-c"><span class="nav-number">1.1.2.6.</span> <span class="nav-text">6.新建index.html和test.c</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#7-%E6%8B%B7%E8%B4%9D%E7%9B%B8%E5%85%B3%E6%96%87%E4%BB%B6"><span class="nav-number">1.1.2.7.</span> <span class="nav-text">7.拷贝相关文件</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#8-ARM%E7%A7%BB%E6%A4%8D"><span class="nav-number">1.1.2.8.</span> <span class="nav-text">8.ARM移植</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#9-%E8%BF%90%E8%A1%8C%E6%B5%8B%E8%AF%95"><span class="nav-number">1.1.2.9.</span> <span class="nav-text">9.运行测试</span></a></li></ol></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#GoAhead"><span class="nav-number">1.2.</span> <span class="nav-text">GoAhead</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#GoAhead%E6%A6%82%E8%BF%B0"><span class="nav-number">1.2.1.</span> <span class="nav-text">GoAhead概述</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#GoAhead%E7%A7%BB%E6%A4%8D"><span class="nav-number">1.2.2.</span> <span class="nav-text">GoAhead移植</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#madplay"><span class="nav-number">2.</span> <span class="nav-text">madplay</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#madplay%E6%A6%82%E8%BF%B0"><span class="nav-number">2.1.</span> <span class="nav-text">madplay概述</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#madplay-PC-Linux"><span class="nav-number">2.2.</span> <span class="nav-text">madplay-PC-Linux</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#1-%E8%A7%A3%E5%8E%8B%E6%BA%90%E7%A0%81%E5%8C%85"><span class="nav-number">2.2.1.</span> <span class="nav-text">1.解压源码包</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-%E7%BC%96%E8%AF%91madplay%E5%8F%8A%E5%AE%83%E6%89%80%E4%BE%9D%E8%B5%96%E7%9A%84%E5%BA%93%E6%96%87%E4%BB%B6"><span class="nav-number">2.2.2.</span> <span class="nav-text">2.编译madplay及它所依赖的库文件</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#zlib"><span class="nav-number">2.2.2.1.</span> <span class="nav-text">zlib</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#libid3tag"><span class="nav-number">2.2.2.2.</span> <span class="nav-text">libid3tag</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#libmad"><span class="nav-number">2.2.2.3.</span> <span class="nav-text">libmad</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#madplay-1"><span class="nav-number">2.2.2.4.</span> <span class="nav-text">madplay</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E9%9D%99%E6%80%81%E9%93%BE%E6%8E%A5"><span class="nav-number">2.2.2.5.</span> <span class="nav-text">静态链接</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#3-%E8%BF%90%E8%A1%8C%E6%B5%8B%E8%AF%95"><span class="nav-number">2.2.3.</span> <span class="nav-text">3.运行测试</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#4-%E6%9E%84%E5%BB%BA%E8%84%9A%E6%9C%AC%E6%96%87%E4%BB%B6"><span class="nav-number">2.2.4.</span> <span class="nav-text">4.构建脚本文件</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#madplay-ARM-Linux"><span class="nav-number">2.3.</span> <span class="nav-text">madplay-ARM-Linux</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#1-%E6%9E%84%E5%BB%BA%E8%84%9A%E6%9C%AC"><span class="nav-number">2.3.1.</span> <span class="nav-text">1.构建脚本</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-%E8%BF%90%E8%A1%8C%E9%AA%8C%E8%AF%81"><span class="nav-number">2.3.2.</span> <span class="nav-text">2.运行验证</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#iconv"><span class="nav-number">3.</span> <span class="nav-text">iconv</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#iconv%E6%A6%82%E8%BF%B0"><span class="nav-number">3.1.</span> <span class="nav-text">iconv概述</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#iconv%E5%BA%94%E7%94%A8"><span class="nav-number">3.2.</span> <span class="nav-text">iconv应用</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#FrameBuffer"><span class="nav-number">4.</span> <span class="nav-text">FrameBuffer</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#FrameBuffer%E6%A6%82%E8%BF%B0"><span class="nav-number">4.1.</span> <span class="nav-text">FrameBuffer概述</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#framebuffer%E5%AE%9E%E6%88%98"><span class="nav-number">4.2.</span> <span class="nav-text">framebuffer实战</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">ADonkey</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">10</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">8</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">13</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2024</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">ADonkey</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+    <span title="站点总字数">53k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+    <span title="站点阅读时长">48 分钟</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>
