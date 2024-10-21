@@ -210,14 +210,14 @@
                 <i class="far fa-file-word"></i>
               </span>
                 <span class="post-meta-item-text">本文字数：</span>
-              <span>4.3k</span>
+              <span>11k</span>
             </span>
             <span class="post-meta-item" title="阅读时长">
               <span class="post-meta-item-icon">
                 <i class="far fa-clock"></i>
               </span>
                 <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>4 分钟</span>
+              <span>10 分钟</span>
             </span>
 
         </div>
@@ -244,14 +244,212 @@
 <li>拷贝构造函数和拷贝赋值运算符：如果没有特别的要求，使用 &#x3D; default 可以让编译器生成默认的拷贝构造和赋值运算符。</li>
 </ul>
 <p>当你需要让类有特定行为（如自定义构造、析构等），但仍然希望保留编译器生成的某些默认行为时，可以用 &#x3D; default 显式要求编译器生成这些函数。</p>
-<h3 id="unique-ptr相关api"><a href="#unique-ptr相关api" class="headerlink" title="unique_ptr相关api"></a>unique_ptr相关api</h3><p> std::unique_ptr 提供了一个 reset() 方法，用于重置智能指针的管理对象或将其指向新的对象。</p>
+<h4 id="类型转换"><a href="#类型转换" class="headerlink" title="类型转换"></a>类型转换</h4><h5 id="static-cast"><a href="#static-cast" class="headerlink" title="static_cast"></a>static_cast</h5><p>含义</p>
+<ul>
+<li><code>static_cast</code> 是一种类型安全的转换，可以在不进行运行时检查的情况下转换类型。</li>
+</ul>
+<p>用途</p>
+<ul>
+<li>用于已知类型之间的转换，如基本数据类型、类层次结构中的上行或下行转换（当确定转换是安全时）。</li>
+</ul>
+<p>示例</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> a = <span class="number">10</span>;</span><br><span class="line"><span class="type">double</span> b = <span class="built_in">static_cast</span>&lt;<span class="type">double</span>&gt;(a); <span class="comment">// 基本数据类型转换</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Base</span> &#123;&#125;;</span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Derived</span> : <span class="keyword">public</span> Base &#123;&#125;;</span><br><span class="line"></span><br><span class="line">Base* basePtr = <span class="keyword">new</span> <span class="built_in">Derived</span>();</span><br><span class="line">Derived* derivedPtr = <span class="built_in">static_cast</span>&lt;Derived*&gt;(basePtr); <span class="comment">// 注意：没有安全检查</span></span><br></pre></td></tr></table></figure>
+
+<h5 id="reinterpret-cast"><a href="#reinterpret-cast" class="headerlink" title="reinterpret_cast"></a>reinterpret_cast</h5><p>含义</p>
+<ul>
+<li><code>reinterpret_cast</code> 用于进行低级别的类型转换，几乎可以将任何指针类型转换为任何其他指针类型。</li>
+</ul>
+<p>用途</p>
+<ul>
+<li>主要用于处理底层操作，如指针的位表示。由于它不进行任何类型检查，使用时需要小心。</li>
+</ul>
+<p>示例</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> a = <span class="number">10</span>;</span><br><span class="line"><span class="type">void</span>* ptr = <span class="built_in">reinterpret_cast</span>&lt;<span class="type">void</span>*&gt;(&amp;a); <span class="comment">// 将 int* 转换为 void*</span></span><br><span class="line"><span class="type">int</span>* intPtr = <span class="built_in">reinterpret_cast</span>&lt;<span class="type">int</span>*&gt;(ptr); <span class="comment">// 再次转换回 int*</span></span><br></pre></td></tr></table></figure>
+
+<h5 id="const-cast"><a href="#const-cast" class="headerlink" title="const_cast"></a>const_cast</h5><p>含义</p>
+<ul>
+<li><code>const_cast</code> 用于添加或去除对象的 <code>const</code> 或 <code>volatile</code> 属性。</li>
+</ul>
+<p>用途</p>
+<ul>
+<li>主要用于需要修改一个常量对象的场景，但要小心使用，因为这可能导致未定义行为。</li>
+</ul>
+<p>示例</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">const</span> <span class="type">int</span> a = <span class="number">10</span>;</span><br><span class="line"><span class="type">int</span>* b = <span class="built_in">const_cast</span>&lt;<span class="type">int</span>*&gt;(&amp;a); <span class="comment">// 去除 const 属性</span></span><br><span class="line">*b = <span class="number">20</span>; <span class="comment">// 这是不安全的，可能导致未定义行为</span></span><br></pre></td></tr></table></figure>
+
+<h5 id="dynamic-cast"><a href="#dynamic-cast" class="headerlink" title="dynamic_cast"></a>dynamic_cast</h5><p>含义</p>
+<ul>
+<li><code>dynamic_cast</code> 用于在类层次结构中进行安全的向下转换（downcasting）。</li>
+</ul>
+<p>用途</p>
+<ul>
+<li>主要用于多态类型（即有虚函数的类）之间的安全转换，能够检查转换是否成功。如果转换失败，返回 <code>nullptr</code>（对于指针）或抛出 <code>std::bad_cast</code>（对于引用）。</li>
+</ul>
+<p>示例</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Base</span> &#123; <span class="function"><span class="keyword">virtual</span> <span class="type">void</span> <span class="title">func</span><span class="params">()</span> </span>&#123;&#125; &#125;; <span class="comment">// 有虚函数</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Derived</span> : <span class="keyword">public</span> Base &#123;&#125;;</span><br><span class="line"></span><br><span class="line">Base* basePtr = <span class="keyword">new</span> <span class="built_in">Derived</span>();</span><br><span class="line">Derived* derivedPtr = <span class="built_in">dynamic_cast</span>&lt;Derived*&gt;(basePtr); <span class="comment">// 安全转换</span></span><br><span class="line"><span class="keyword">if</span> (derivedPtr) &#123;</span><br><span class="line">    <span class="comment">// 转换成功</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h5 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h5><ul>
+<li><p>**<code>const_cast</code>**：添加或去除 <code>const</code> 属性。用于处理常量性。</p>
+</li>
+<li><p>**<code>dynamic_cast</code>**：安全地在类层次结构中转换，支持运行时检查。用于多态类型的安全转换。</p>
+</li>
+<li><p>**<code>static_cast</code>**：类型安全的转换，适用于已知的类型关系。基本类型之间转换</p>
+</li>
+<li><p>**<code>reinterpret_cast</code>**：用于低级别转换，没有安全检查。</p>
+</li>
+</ul>
+<h4 id="move-forward"><a href="#move-forward" class="headerlink" title="move&#x2F;forward"></a>move&#x2F;forward</h4><h5 id="左值"><a href="#左值" class="headerlink" title="左值"></a>左值</h5><p><strong>定义</strong>：左值是指有名称并且可以在内存中持久存在的对象。它们可以出现在赋值操作的左侧。</p>
+<p><strong>特点</strong>：</p>
+<ul>
+<li><p>具有持久的地址，可以取地址（使用 <code>&amp;</code> 运算符）。</p>
+</li>
+<li><p>通常是变量或对象。</p>
+</li>
+</ul>
+<h5 id="右值"><a href="#右值" class="headerlink" title="右值"></a>右值</h5><p><strong>定义</strong>：右值是指临时对象或字面量，它们没有名称，通常是不能在内存中持久存在的对象。右值出现在赋值操作的右侧。</p>
+<p><strong>特点</strong>：</p>
+<ul>
+<li>不具有持久的地址，通常是临时计算结果。</li>
+<li>不能取地址。</li>
+</ul>
+<h5 id="区别"><a href="#区别" class="headerlink" title="区别"></a>区别</h5><ul>
+<li><strong>持久性</strong>：左值有持久的内存地址，可以在代码中多次引用；而右值是临时的，通常只在表达式中存在一次。</li>
+<li><strong>可修改性</strong>：左值可以被修改，右值通常不能直接修改（因为它们没有名称）。</li>
+</ul>
+<h5 id="move"><a href="#move" class="headerlink" title="move"></a>move</h5><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;utility&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">MyClass</span> &#123;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="built_in">MyClass</span>() &#123; std::cout &lt;&lt; <span class="string">&quot;Constructed\n&quot;</span>; &#125;</span><br><span class="line">    <span class="built_in">MyClass</span>(<span class="type">const</span> MyClass&amp;) &#123; std::cout &lt;&lt; <span class="string">&quot;Copied\n&quot;</span>; &#125;</span><br><span class="line">    <span class="built_in">MyClass</span>(MyClass&amp;&amp;) <span class="keyword">noexcept</span> &#123; std::cout &lt;&lt; <span class="string">&quot;Moved\n&quot;</span>; &#125;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">process</span><span class="params">(MyClass obj)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// Do something with obj</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    MyClass a;               <span class="comment">// a 是左值</span></span><br><span class="line">    <span class="built_in">process</span>(std::<span class="built_in">move</span>(a));  <span class="comment">// std::move(a) 是右值</span></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>在这个示例中，<code>process</code> 函数的参数是一个 <code>MyClass</code> 对象：</p>
+<ul>
+<li><p>当我们调用 <code>process(std::move(a))</code> 时，我们将 <code>a</code> 转换为右值，以便在 <code>process</code> 函数中通过移动构造函数创建 <code>obj</code>。</p>
+</li>
+<li><p>这样，<code>obj</code> 可能会通过移动构造来初始化，而不是通过复制构造。输出将会显示 “Moved”，而不是 “Copied”，这表明资源被成功转移而不是重复创建。</p>
+</li>
+<li><p>在 <code>main</code> 函数中，<code>a</code> 是一个左值，因为它是一个有名称的对象，存在于内存中。</p>
+</li>
+<li><p>当我们调用 <code>std::move(a)</code> 时，<code>std::move</code> 将 <code>a</code> 转换为右值，这表示我们希望转移 <code>a</code> 的资源到 <code>process</code> 函数中。此时，<code>a</code> 可以被视为一个临时对象，所有权可以被移动。</p>
+</li>
+</ul>
+<h6 id="移动语义"><a href="#移动语义" class="headerlink" title="移动语义"></a>移动语义</h6><ul>
+<li><strong>减少复制开销</strong>：右值可以通过移动构造函数或移动赋值运算符来转移资源，而不是复制。这对于管理大量数据的对象（如容器、文件句柄等）尤其重要。</li>
+<li><strong>效率</strong>：移动操作通常比复制操作要快，因为它只需要转移指针或其他简单的资源标识符，而不是复制整个对象的内容。</li>
+</ul>
+<h6 id="表示所有权转移"><a href="#表示所有权转移" class="headerlink" title="表示所有权转移"></a>表示所有权转移</h6><ul>
+<li><strong>语义清晰</strong>：使用 <code>std::move</code> 明确表示我们不再需要原来的对象，可以将其资源转移到另一个对象中。这样，调用者（如 <code>process</code> 函数）能够明确知道它将获得资源的所有权。</li>
+</ul>
+<h5 id="forward"><a href="#forward" class="headerlink" title="forward"></a>forward</h5><h4 id="noexcept"><a href="#noexcept" class="headerlink" title="noexcept"></a>noexcept</h4><p>用于指示某个函数不会抛出异常。使用 <code>noexcept</code> 可以帮助编译器进行优化，生成更高效的代码，并在运行时提供更好的异常安全性</p>
+<p><strong>使用方式</strong>：</p>
+<ul>
+<li><p>在函数声明中使用：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">void</span> <span class="title">myFunction</span><span class="params">()</span> <span class="keyword">noexcept</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 该函数不会抛出异常</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>在表达式中使用，判断一个函数是否可能抛出异常：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">static_assert</span>(<span class="built_in">noexcept</span>(<span class="built_in">myFunction</span>()), <span class="string">&quot;myFunction may throw!&quot;</span>);</span><br></pre></td></tr></table></figure></li>
+</ul>
+<p><code>static_assert(noexcept(myFunction()), &quot;myFunction may throw!&quot;);</code> 是一个编译时断言，用于检查 <code>myFunction</code> 是否声明为 <code>noexcept</code>。</p>
+<p><strong>详细解释：</strong></p>
+<ol>
+<li>**<code>noexcept(myFunction())</code>**：这个表达式检查 <code>myFunction</code> 是否会抛出异常。如果 <code>myFunction</code> 是 <code>noexcept</code> 的，结果为 <code>true</code>；否则为 <code>false</code>。</li>
+<li>**<code>static_assert</code>**：这是一个在编译时进行检查的语句。如果其第一个参数为 <code>false</code>，编译器会产生错误，并输出第二个参数的错误信息。这样，开发者可以在编译时捕捉到潜在的问题。</li>
+<li><strong>错误信息</strong>：如果 <code>myFunction</code> 可能抛出异常（即 <code>noexcept(myFunction())</code> 为 <code>false</code>），编译器将显示 <code>&quot;myFunction may throw!&quot;</code> 的错误信息，提示开发者。</li>
+</ol>
+<p><strong>示例：</strong></p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">void</span> <span class="title">myFunction</span><span class="params">()</span> <span class="keyword">noexcept</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 不会抛出异常</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="built_in">static_assert</span>(<span class="built_in">noexcept</span>(<span class="built_in">myFunction</span>()), <span class="string">&quot;myFunction may throw!&quot;</span>); <span class="comment">// 通过检查</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">anotherFunction</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">throw</span> std::<span class="built_in">runtime_error</span>(<span class="string">&quot;Error&quot;</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="built_in">static_assert</span>(<span class="built_in">noexcept</span>(<span class="built_in">anotherFunction</span>()), <span class="string">&quot;anotherFunction may throw!&quot;</span>); <span class="comment">// 编译时错误</span></span><br></pre></td></tr></table></figure>
+
+<h4 id="constexpr"><a href="#constexpr" class="headerlink" title="constexpr"></a>constexpr</h4><p>用于指示某个函数或变量在编译时可被求值。它使得在编译期间进行常量计算成为可能，通常用于优化性能。</p>
+<p><strong>使用方式</strong>：</p>
+<ul>
+<li><p>用于函数声明：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">constexpr</span> <span class="type">int</span> <span class="title">add</span><span class="params">(<span class="type">int</span> a, <span class="type">int</span> b)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> a + b;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>用于变量声明：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">constexpr</span> <span class="type">int</span> maxSize = <span class="number">100</span>; <span class="comment">// 编译时常量</span></span><br></pre></td></tr></table></figure>
+</li>
+<li><p>可以与 <code>if</code>、<code>for</code> 等控制结构结合使用，使得复杂计算在编译时完成：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">constexpr</span> <span class="type">int</span> <span class="title">factorial</span><span class="params">(<span class="type">int</span> n)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> (n &lt;= <span class="number">1</span>) ? <span class="number">1</span> : n * <span class="built_in">factorial</span>(n - <span class="number">1</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
+</ul>
+<p><strong>优势</strong>：</p>
+<ol>
+<li><strong>编译时计算</strong>：减少运行时计算的开销，提高程序性能。</li>
+<li><strong>类型安全</strong>：使用 <code>constexpr</code> 可以确保在编译时进行类型检查，从而降低运行时错误的可能性。</li>
+<li><strong>优化常量表达式</strong>：可以用于数组大小、模板参数等需要编译时常量的场合。</li>
+</ol>
+<h4 id="左值引用与右值引用"><a href="#左值引用与右值引用" class="headerlink" title="左值引用与右值引用"></a>左值引用与右值引用</h4><h5 id="左值引用"><a href="#左值引用" class="headerlink" title="左值引用"></a>左值引用</h5><p>通过&amp;获得左值引用，左值引用只能绑定左值。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> intValue1 = <span class="number">10</span>;</span><br><span class="line"><span class="comment">//将intValue1绑定到intValue2和intValue3</span></span><br><span class="line"><span class="type">int</span> &amp;intValue2 = intValue1, &amp;intValue3 = intValue2;</span><br><span class="line">intValue2 = <span class="number">100</span>;</span><br><span class="line">std::cout &lt;&lt; intValue1 &lt;&lt; std::endl;<span class="comment">//100</span></span><br><span class="line">std::cout &lt;&lt; intValue2 &lt;&lt; std::endl;<span class="comment">//100</span></span><br><span class="line">std::cout &lt;&lt; intValue3 &lt;&lt; std::endl;<span class="comment">//100</span></span><br></pre></td></tr></table></figure>
+
+<p>不能将左值引用绑定到一个右值，但是<strong>const的左值引用可以</strong>，常量引用不能修改绑定对象的值</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> &amp;intValue1 = <span class="number">10</span>;<span class="comment">//错误</span></span><br><span class="line"><span class="type">const</span> <span class="type">int</span> &amp;intValue2 = <span class="number">10</span>;<span class="comment">//正确</span></span><br></pre></td></tr></table></figure>
+
+<h5 id="右值引用"><a href="#右值引用" class="headerlink" title="右值引用"></a>右值引用</h5><p>通过&amp;&amp;获得右值引用，右值引用只能绑定右值<br>右值引用的好处是减少右值作为参数传递时的复制开销</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> intValue = <span class="number">10</span>;</span><br><span class="line"><span class="type">int</span> &amp;&amp;intValue2 = <span class="number">10</span>;<span class="comment">//正确</span></span><br><span class="line"><span class="type">int</span> &amp;&amp;intValue3 = intValue;<span class="comment">//错误</span></span><br></pre></td></tr></table></figure>
+
+<p>使用std::move可以获得绑定到一个左值的右值引用</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> intValue = <span class="number">10</span>;</span><br><span class="line"><span class="type">int</span> &amp;&amp;intValue3 = std::<span class="built_in">move</span>(intValue);</span><br></pre></td></tr></table></figure>
+
+<h4 id="C-移动构造-拷贝构造"><a href="#C-移动构造-拷贝构造" class="headerlink" title="C++移动构造&#x2F;拷贝构造"></a>C++移动构造&#x2F;拷贝构造</h4><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 拷贝构造函数 拷贝构造：复制资源，两个对象拥有自己的副本，可能导致性能问题。</span></span><br><span class="line">	<span class="built_in">Student</span>(<span class="type">const</span> Student&amp; other) : <span class="built_in">name</span>(other.name), <span class="built_in">score</span>(other.score) &#123;</span><br><span class="line">    	std::cout &lt;&lt; <span class="string">&quot;Copied: &quot;</span> &lt;&lt; name &lt;&lt; <span class="string">&quot;\n&quot;</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 移动构造函数 移动构造：转移资源的所有权，通常更加高效，源对象在移动后可能处于未定义状态。</span></span><br><span class="line">	<span class="built_in">Student</span>(Student&amp;&amp; other) <span class="keyword">noexcept</span> </span><br><span class="line">    : <span class="built_in">name</span>(std::<span class="built_in">move</span>(other.name)), <span class="built_in">score</span>(other.score) &#123;</span><br><span class="line">    	std::cout &lt;&lt; <span class="string">&quot;Moved: &quot;</span> &lt;&lt; name &lt;&lt; <span class="string">&quot;\n&quot;</span>;</span><br><span class="line">    	other.score = <span class="number">0</span>; <span class="comment">// 清空源对象的状态</span></span><br><span class="line">    	other.name = <span class="string">&quot;Unknown&quot;</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>移动构造函数的触发：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">Student <span class="title">student1</span><span class="params">(<span class="string">&quot;Ros&quot;</span>, <span class="number">95</span>)</span></span>;</span><br><span class="line">Student student2 = std::<span class="built_in">move</span>(student1); <span class="comment">// 这里触发了移动构造</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="相关api"><a href="#相关api" class="headerlink" title="相关api"></a>相关api</h3><p> std::unique_ptr 提供了一个 reset() 方法，用于重置智能指针的管理对象或将其指向新的对象。</p>
 <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">void reset(Student* ptr = nullptr);</span><br></pre></td></tr></table></figure>
 
 <ul>
 <li>作用：reset 用于替换当前管理的指针对象。如果智能指针已经持有一个对象，reset() 会释放当前管理的对象，然后将其指向新对象（或为空）。</li>
 <li>参数：它接受一个原始指针 ptr，该指针将成为新的管理对象。如果不传参数，则会将当前指针对象重置为 nullptr，释放原来的资源。</li>
 </ul>
-<h3 id="unique-ptr不可拷贝特性"><a href="#unique-ptr不可拷贝特性" class="headerlink" title="unique_ptr不可拷贝特性"></a>unique_ptr不可拷贝特性</h3><ol>
+<p>在 std::make_unique<Student>() 中，&lt;&gt; 表示这是一个模板函数的调用。具体来说，std::make_unique 是一个模板，Student 是其模板参数，表示要创建的对象类型。</p>
+<p>在 std::make_unique<Student>() 的末尾有一个空的圆括号 ()，这表示调用 make_unique 函数</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">std::make_unique源码：</span><br><span class="line"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> _Tp, <span class="keyword">typename</span>... _Args&gt;</span><br><span class="line"><span class="keyword">inline</span> <span class="keyword">typename</span> _MakeUniq&lt;_Tp&gt;::<span class="function">__single_object</span></span><br><span class="line"><span class="function"><span class="title">make_unique</span><span class="params">(_Args&amp;&amp;... __args)</span></span></span><br><span class="line"><span class="function"></span>&#123; <span class="keyword">return</span> <span class="built_in">unique_ptr</span>&lt;_Tp&gt;(<span class="keyword">new</span> _Tp(std::forward&lt;_Args&gt;(__args)...)); &#125;</span><br></pre></td></tr></table></figure>
+
+<p>1.代码分析：</p>
+<ul>
+<li><p>模板参数：</p>
+<ul>
+<li>typename _Tp：表示要创建的对象类型（比如 Student）。</li>
+<li>typename… _Args：表示任意数量的参数，允许传递构造对象所需的任意数量和类型的参数。</li>
+</ul>
+</li>
+<li><p>返回类型：</p>
+<ul>
+<li>typename _MakeUniq&lt;_Tp&gt;::__single_object：这里使用了一个类型别名，通常是 std::unique_ptr&lt;_Tp&gt;。这个返回类型表示这个函数返回一个指向 _Tp 类型的智能指针。</li>
+</ul>
+</li>
+<li><p>函数体：</p>
+<ul>
+<li>new _Tp(std::forward&lt;_Args&gt;(__args)…)：这里调用了 <em>Tp 的构造函数，传递了使用 std::forward 转发的参数。std::forward 用于完美转发参数，保持参数的值类别（左值或右值）。</em></li>
+<li>_return unique_ptr&lt;_Tp&gt;(…)：创建并返回一个 std::unique_ptr，它管理新创建的对象的生命周期。</li>
+</ul>
+</li>
+</ul>
+<p>2.与 std::make_unique<Student>() 的关系</p>
+<p>当你调用 std::make_unique<Student>() 时，发生的事情如下：</p>
+<ul>
+<li>Student 被推断为 _Tp，即要创建的对象类型。</li>
+<li>空的 () 表示没有构造参数，因此 _Args 为零参数。</li>
+<li>这个调用实际上转发了空的参数给 make_unique 函数，即 __args 是一个空包（没有参数）。</li>
+</ul>
+<p>3.小括号和尖括号的区别</p>
+<ul>
+<li><p>尖括号 &lt;&gt;：用于指明模板参数类型。在 std::make_unique<Student>() 中，尖括号用于指定模板类型 Student，这是模板函数的类型参数。</p>
+</li>
+<li><p>小括号 ()：用于调用函数或构造对象。在 std::make_unique<Student>() 中，小括号表示调用 make_unique 函数。如果有参数，则小括号中会包含这些参数；如果没有参数，如 std::make_unique<Student>()，则小括号为空。</p>
+</li>
+</ul>
+<p>4.参数数量的不同</p>
+<ul>
+<li>在 make_unique 的实现中，使用了可变参数模板 (typename… <em>Args) 来支持任意数量的构造参数。</em></li>
+<li>_在调用 std::make_unique<Student>() 时，如果没有提供参数，_Args 就是一个空包，允许你创建一个 Student 对象的默认实例。</li>
+</ul>
+<p>总结</p>
+<ul>
+<li><p>std::make_unique<Student>() 通过模板函数 make_unique 实现了创建智能指针的功能。</p>
+</li>
+<li><p>尖括号 &lt;&gt; 用于指定模板类型，而小括号 () 用于调用函数。</p>
+</li>
+<li><p>make_unique 的实现灵活地支持任意数量的构造参数，允许你根据需要创建不同的对象。通过这种方式，std::make_unique 不仅提高了代码的安全性和可读性，也减少了手动内存管理的负担。</p>
+</li>
+</ul>
+<h3 id="不可拷贝特性"><a href="#不可拷贝特性" class="headerlink" title="不可拷贝特性"></a>不可拷贝特性</h3><ol>
 <li>使用 std::move显式地将一个对象转换为右值引用，从而启用移动语义。它不会真的移动对象，而是指示编译器可以安全地窃取资源。</li>
 <li>将 std::unique_ptr<Student> 移入 vector 中是不可以直接push_back()， 在 C++ 中，std::unique_ptr 是不可拷贝的。</li>
 </ol>
@@ -260,7 +458,7 @@
 <p>完整程序如下</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;string&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;vector&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;memory&gt;</span></span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Student</span>&#123;</span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">    std::string name;</span><br><span class="line">    <span class="type">double</span> score;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="built_in">Student</span>() = <span class="keyword">default</span>;</span><br><span class="line">    <span class="function"><span class="type">void</span> <span class="title">set</span><span class="params">(<span class="type">const</span> std::string&amp; n, <span class="type">double</span> s)</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>-&gt;name = n;</span><br><span class="line">        <span class="keyword">this</span>-&gt;score = s;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="function"><span class="type">double</span> <span class="title">get_score</span><span class="params">()</span> <span class="type">const</span> </span>&#123;<span class="keyword">return</span> score;&#125;</span><br><span class="line">    <span class="function"><span class="type">const</span> std::string&amp; <span class="title">get_name</span><span class="params">()</span> <span class="type">const</span> </span>&#123;<span class="keyword">return</span> name;&#125;</span><br><span class="line">    <span class="function"><span class="type">void</span> <span class="title">display</span><span class="params">()</span> <span class="type">const</span> </span>&#123;</span><br><span class="line">        std::cout &lt;&lt; <span class="string">&quot;name : &quot;</span> &lt;&lt; name &lt;&lt; <span class="string">&quot;\t score &quot;</span> &lt;&lt; score &lt;&lt; std::endl;</span><br><span class="line">    &#125;</span><br><span class="line">    ~<span class="built_in">Student</span>()&#123;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">compare</span><span class="params">(<span class="type">const</span> std::unique_ptr&lt;Student&gt;&amp; a, <span class="type">const</span> std::unique_ptr&lt;Student&gt;&amp; b)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">if</span>(a-&gt;<span class="built_in">get_score</span>() &lt; b-&gt;<span class="built_in">get_score</span>()) <span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">    <span class="keyword">if</span>(a-&gt;<span class="built_in">get_score</span>() &gt; b-&gt;<span class="built_in">get_score</span>()) <span class="keyword">return</span> <span class="number">-1</span>;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">-1</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="comment">//max(new Student())和max(new Student)效果一样 都使用默认构造函数</span></span><br><span class="line">    <span class="comment">//!智能指针写法 两种后者更好一些 </span></span><br><span class="line">    <span class="comment">// std::unique_ptr&lt;Student&gt; max(new Student());</span></span><br><span class="line">    <span class="comment">// std::unique_ptr&lt;Student&gt; min(new Student);</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// std::unique_ptr&lt;Student&gt; min = std::make_unique&lt;Student&gt;();</span></span><br><span class="line">    <span class="comment">// std::unique_ptr&lt;Student&gt; max = std::make_unique&lt;Student&gt;();</span></span><br><span class="line">    </span><br><span class="line">    <span class="comment">//!这样是开辟在栈上；注意野指针 由于最后还是会指向栈上的指针，这里就不必要new开辟内存</span></span><br><span class="line">    <span class="comment">// Student *min = nullptr;</span></span><br><span class="line">    <span class="comment">// Student *max = nullptr; </span></span><br><span class="line"></span><br><span class="line">    <span class="comment">//! 下面这种写法是最傻逼的，一个变量一行!//</span></span><br><span class="line">    <span class="comment">// Student *min,*max = new Student();</span></span><br><span class="line">    <span class="comment">//! 这样语法正确，但是此场景存在内存泄漏，因为max min后面改变指针指向，指向了栈上的元素</span></span><br><span class="line">    <span class="comment">// Student *min =  new Student();</span></span><br><span class="line">    <span class="comment">// Student *max =  new Student();</span></span><br><span class="line"></span><br><span class="line">    </span><br><span class="line">    std::vector&lt;std::unique_ptr&lt;Student&gt;&gt; students;</span><br><span class="line">    std::string stu_name[] =  &#123; <span class="string">&quot;Rose&quot;</span>,<span class="string">&quot;Mike&quot;</span>,<span class="string">&quot;Eve&quot;</span>,<span class="string">&quot;Micheal&quot;</span>,<span class="string">&quot;Jack&quot;</span> &#125;;</span><br><span class="line">    <span class="type">double</span> stu_score[] = &#123; <span class="number">95</span>,<span class="number">84</span>,<span class="number">88</span>,<span class="number">64</span>,<span class="number">100</span> &#125;;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 动态创建学生对象并存储在智能指针中</span></span><br><span class="line">    <span class="keyword">for</span>(<span class="type">int</span> i = <span class="number">0</span>; i &lt; <span class="number">5</span>; i ++)&#123;</span><br><span class="line">        <span class="comment">//使用 std::make_unique&lt;Student&gt;() 创建动态分配的学生对象，确保它们都在堆上分配。</span></span><br><span class="line">        <span class="keyword">auto</span> student = std::<span class="built_in">make_unique</span>&lt;Student&gt;();</span><br><span class="line">        student-&gt;<span class="built_in">set</span>(stu_name[i], stu_score[i]);</span><br><span class="line">        student-&gt;<span class="built_in">display</span>();</span><br><span class="line">        students.<span class="built_in">push_back</span>(std::<span class="built_in">move</span>(student));</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    std::unique_ptr&lt;Student&gt; *min = &amp;students[<span class="number">0</span>];</span><br><span class="line">    std::unique_ptr&lt;Student&gt; *max = &amp;students[<span class="number">0</span>];</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span>(<span class="type">int</span> i = <span class="number">0</span>; i &lt; <span class="number">5</span>; i ++)&#123;</span><br><span class="line">        <span class="keyword">if</span>(<span class="built_in">compare</span>(*min, students[i]) == <span class="number">1</span>)</span><br><span class="line">            min = &amp;students[i];   <span class="comment">// min指向新的智能指针</span></span><br><span class="line">        <span class="keyword">if</span>(<span class="built_in">compare</span>(*max, students[i]) == <span class="number">-1</span>)</span><br><span class="line">            max = &amp;students[i];   <span class="comment">// max指向新的智能指针</span></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//!min 和 max 指向 std::unique_ptr&lt;Student&gt; 的指针 解引用一层才是指向Student的指针 才可以使用-&gt;</span></span><br><span class="line">    std::cout &lt;&lt; <span class="string">&quot;The worst student : &quot;</span> &lt;&lt; (*min)-&gt;<span class="built_in">get_name</span>() &lt;&lt; std::endl;</span><br><span class="line">	std::cout &lt;&lt; <span class="string">&quot;The best student : &quot;</span> &lt;&lt; (*max)-&gt;<span class="built_in">get_name</span>() &lt;&lt; std::endl;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
-
+<h2 id="shared-ptr"><a href="#shared-ptr" class="headerlink" title="shared_ptr"></a>shared_ptr</h2>
     </div>
 
     
@@ -279,8 +477,8 @@
         
     <div class="post-nav">
       <div class="post-nav-item">
-    <a href="/2024/10/13/linux%E4%BD%BF%E7%94%A8GCC%E7%BC%96%E8%AF%91STM32%E5%B9%B6%E7%A7%BB%E6%A4%8DFreeRTOS/" rel="prev" title="linux使用GCC编译STM32并移植FreeRTOS">
-      <i class="fa fa-chevron-left"></i> linux使用GCC编译STM32并移植FreeRTOS
+    <a href="/2024/10/19/qt%E5%AD%A6%E4%B9%A0%E6%80%BB%E7%BB%93/" rel="prev" title="qt学习总结">
+      <i class="fa fa-chevron-left"></i> qt学习总结
     </a></div>
       <div class="post-nav-item"></div>
     </div>
@@ -341,7 +539,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#unique-ptr"><span class="nav-number">1.</span> <span class="nav-text">unique_ptr</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%89%8D%E7%BD%AE%E7%9F%A5%E8%AF%86"><span class="nav-number">1.1.</span> <span class="nav-text">前置知识</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%99%BA%E8%83%BD%E6%8C%87%E9%92%88%E4%B8%8ERAII"><span class="nav-number">1.1.1.</span> <span class="nav-text">智能指针与RAII</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#const%E4%BF%AE%E9%A5%B0%E7%AC%A6"><span class="nav-number">1.1.2.</span> <span class="nav-text">const修饰符</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#default%E4%BF%AE%E9%A5%B0%E7%AC%A6"><span class="nav-number">1.1.3.</span> <span class="nav-text">default修饰符</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#unique-ptr%E7%9B%B8%E5%85%B3api"><span class="nav-number">1.2.</span> <span class="nav-text">unique_ptr相关api</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#unique-ptr%E4%B8%8D%E5%8F%AF%E6%8B%B7%E8%B4%9D%E7%89%B9%E6%80%A7"><span class="nav-number">1.3.</span> <span class="nav-text">unique_ptr不可拷贝特性</span></a></li></ol></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#unique-ptr"><span class="nav-number">1.</span> <span class="nav-text">unique_ptr</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%89%8D%E7%BD%AE%E7%9F%A5%E8%AF%86"><span class="nav-number">1.1.</span> <span class="nav-text">前置知识</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%99%BA%E8%83%BD%E6%8C%87%E9%92%88%E4%B8%8ERAII"><span class="nav-number">1.1.1.</span> <span class="nav-text">智能指针与RAII</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#const%E4%BF%AE%E9%A5%B0%E7%AC%A6"><span class="nav-number">1.1.2.</span> <span class="nav-text">const修饰符</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#default%E4%BF%AE%E9%A5%B0%E7%AC%A6"><span class="nav-number">1.1.3.</span> <span class="nav-text">default修饰符</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2"><span class="nav-number">1.1.4.</span> <span class="nav-text">类型转换</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#static-cast"><span class="nav-number">1.1.4.1.</span> <span class="nav-text">static_cast</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#reinterpret-cast"><span class="nav-number">1.1.4.2.</span> <span class="nav-text">reinterpret_cast</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#const-cast"><span class="nav-number">1.1.4.3.</span> <span class="nav-text">const_cast</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#dynamic-cast"><span class="nav-number">1.1.4.4.</span> <span class="nav-text">dynamic_cast</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">1.1.4.5.</span> <span class="nav-text">总结</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#move-forward"><span class="nav-number">1.1.5.</span> <span class="nav-text">move&#x2F;forward</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%B7%A6%E5%80%BC"><span class="nav-number">1.1.5.1.</span> <span class="nav-text">左值</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%8F%B3%E5%80%BC"><span class="nav-number">1.1.5.2.</span> <span class="nav-text">右值</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%8C%BA%E5%88%AB"><span class="nav-number">1.1.5.3.</span> <span class="nav-text">区别</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#move"><span class="nav-number">1.1.5.4.</span> <span class="nav-text">move</span></a><ol class="nav-child"><li class="nav-item nav-level-6"><a class="nav-link" href="#%E7%A7%BB%E5%8A%A8%E8%AF%AD%E4%B9%89"><span class="nav-number">1.1.5.4.1.</span> <span class="nav-text">移动语义</span></a></li><li class="nav-item nav-level-6"><a class="nav-link" href="#%E8%A1%A8%E7%A4%BA%E6%89%80%E6%9C%89%E6%9D%83%E8%BD%AC%E7%A7%BB"><span class="nav-number">1.1.5.4.2.</span> <span class="nav-text">表示所有权转移</span></a></li></ol></li><li class="nav-item nav-level-5"><a class="nav-link" href="#forward"><span class="nav-number">1.1.5.5.</span> <span class="nav-text">forward</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#noexcept"><span class="nav-number">1.1.6.</span> <span class="nav-text">noexcept</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#constexpr"><span class="nav-number">1.1.7.</span> <span class="nav-text">constexpr</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%B7%A6%E5%80%BC%E5%BC%95%E7%94%A8%E4%B8%8E%E5%8F%B3%E5%80%BC%E5%BC%95%E7%94%A8"><span class="nav-number">1.1.8.</span> <span class="nav-text">左值引用与右值引用</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%B7%A6%E5%80%BC%E5%BC%95%E7%94%A8"><span class="nav-number">1.1.8.1.</span> <span class="nav-text">左值引用</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%8F%B3%E5%80%BC%E5%BC%95%E7%94%A8"><span class="nav-number">1.1.8.2.</span> <span class="nav-text">右值引用</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#C-%E7%A7%BB%E5%8A%A8%E6%9E%84%E9%80%A0-%E6%8B%B7%E8%B4%9D%E6%9E%84%E9%80%A0"><span class="nav-number">1.1.9.</span> <span class="nav-text">C++移动构造&#x2F;拷贝构造</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%9B%B8%E5%85%B3api"><span class="nav-number">1.2.</span> <span class="nav-text">相关api</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%8D%E5%8F%AF%E6%8B%B7%E8%B4%9D%E7%89%B9%E6%80%A7"><span class="nav-number">1.3.</span> <span class="nav-text">不可拷贝特性</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#shared-ptr"><span class="nav-number">2.</span> <span class="nav-text">shared_ptr</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -355,7 +553,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">11</span>
+          <span class="site-state-item-count">12</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -404,12 +602,12 @@
     <span class="post-meta-item-icon">
       <i class="fa fa-chart-area"></i>
     </span>
-    <span title="站点总字数">57k</span>
+    <span title="站点总字数">64k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
-    <span title="站点阅读时长">52 分钟</span>
+    <span title="站点阅读时长">58 分钟</span>
 </div>
   <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
   </div>
