@@ -205,14 +205,14 @@
                 <i class="far fa-file-word"></i>
               </span>
                 <span class="post-meta-item-text">本文字数：</span>
-              <span>6.7k</span>
+              <span>9.1k</span>
             </span>
             <span class="post-meta-item" title="阅读时长">
               <span class="post-meta-item-icon">
                 <i class="far fa-clock"></i>
               </span>
                 <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>6 分钟</span>
+              <span>8 分钟</span>
             </span>
 
         </div>
@@ -260,7 +260,32 @@
 <p>由图1-9可知，ARP请求&#x2F;应答报文的长度为28字节。如果再加上以太网帧头部和尾部的18字节（见图1-6），则一个携带ARP请求&#x2F;应答报文的以太网帧长度为46字节。不过有的实现要求以太网帧数据部分长度至少为46字节（见图1-4），此时ARP请求&#x2F;应答报文将增加一些填充字节，以满足这个要求。在这种情况下，一个携带ARP请求&#x2F;应答报文的以太网帧长度为64字节。  </p>
 <p><strong>ARP高速缓存的查看和修改</strong>  </p>
 <p><img src="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20241105153907517.png" alt="image-20241105153907517"></p>
-<h5 id="DNS工作原理"><a href="#DNS工作原理" class="headerlink" title="DNS工作原理"></a>DNS工作原理</h5><h5 id="socket和TCP-IP协议族的关系"><a href="#socket和TCP-IP协议族的关系" class="headerlink" title="socket和TCP&#x2F;IP协议族的关系"></a>socket和TCP&#x2F;IP协议族的关系</h5><p>​	1.数据链路层、网络层、传输层协议是在内核中实现的。因此操作系统需要实现一组系统调用，使得应用程序能够访问这些协议提供的服务。实现这组系统调用的API（Application Programming Interface，应用程序编程接口）主要有两套：socket和XTI。XTI现在基本不再使用  。<br>​	2.由socket定义的这一组API提供如下两点功能：一是将应用程序数据从用户缓冲区中复制到TCP&#x2F;UDP内核发送缓冲区，以交付内核来发送数据（比如图1-5所示的send函数），或者是从内核TCP&#x2F;UDP接收缓冲区中复制数据到用户缓冲区，以读取数据；二是应用程序可以通过它们来修改内核中各层协议的某些头部信息或其他数据结构，从而精细地控制底层通信的行为。比如可以通过setsockopt函数来设置IP数据报在网络上的存活时间。<br>​	3.socket是一套通用网络编程接口，它不但可以访问内核中TCP&#x2F;IP协议栈，而且可以访问其他网络协议栈（比如X.25协议栈、UNIX本地域协议栈等）。  </p>
+<p><strong>使用tcpdump观察ARP通信过程</strong></p>
+<p>​	为了清楚地了解ARP的运作过程，我们从ernest-laptop上执行telnet命令登录Kongming20的echo服务（已经开启），并用tcpdump（详见第17章）抓取这个过程中两台测试机器之间交换的以太网帧。具体的操作过程如下：  </p>
+<p><img src="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20241105163441348.png" alt="image-20241105163441348"></p>
+<p>​	在执行telnet命令之前，应先清除ARP缓存中与Kongming20对应的项，否则ARP通信不被执行，我们也就无法抓取到期望的以太网帧。当执行telnet命令并在两台通信主机之间建立TCP连接后（telnet输出“Connected to 192.168.1.109”），输入Ctrl+]以调出telnet程序的命令提示符，然后在telnet命令提示符后输入quit，退出telnet客户端程序（因为ARP通信在TCP连接建立之前就已经完成，故我们不关心后续内容）。tcpdump抓取到的众多数据包中，只有最靠前的两个和ARP通信有关系，现在将它们列出（数据包前面的编号是笔者加入的，后同）：</p>
+<p><img src="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20241105163502740.png" alt="image-20241105163502740"></p>
+<p>​	由tcpdump抓取的数据包本质上是以太网帧，我们通过该命令的众多选项来控制帧的过滤（比如用dst和src指定通信的目的端IP地址和源端IP地址）和显示（比如用-e选项开启以太网帧头部信息的显示）。</p>
+<p>​	第一个数据包中，ARP通信的源端的物理地址是00:16:d3:5c:b9:e3（ernest-laptop），目的端的物理地址是ff:ff:ff:ff:ff:ff，这是以太网的广播地址，用以表示整个LAN。该LAN上的所有机器都会收到并处理这样的帧。数值0x806是以太网帧头部的类型字段的值，它表示分用的目标是ARP模块。该以太网帧的长度为42字节（实际上是46字节，tcpdump未统计以太网帧尾部4字节的CRC字段），其中数据部分长度为28字节。“Request”表示这是一个ARP请求，“who-has 192.168.1.109 tell 192.168.1.108”则表示是ernest-laptop要查询Kongming20的IP地址。</p>
+<p>​	第二个数据包中，ARP通信的源端的物理地址是08:00:27:53:10:67（Kongming20），目的端的物理地址是00:16:d3:5c:b9:e3（ernest-laptop）。“Reply”表示这是一个ARP应答，“192.168.1.109 is-at 08:00:27:53:10:67”则表示目标机器Kongming20报告其物理地址。该以太网帧的长度为60字节（实际上是64字节），可见它使用了填充字节来满足最小帧长度。</p>
+<p><img src="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20241105163200520.png"></p>
+<p>关于该图，需要说明三点：</p>
+<ul>
+<li>我们将两次传输的以太网帧按照图1-6所描述的以太网帧封装格式绘制在图的下半部分。</li>
+<li>ARP请求和应答是从以太网驱动程序发出的，而并非像图中描述的那样从ARP模块直接发送到以太网上，所以我们将它们用虚线表示，这主要是为了体现携带ARP数据的以太网帧和其他以太网帧（比如携带IP数据报的以太网帧）的区别。</li>
+<li>路由器也将接收到以太网帧1，因为该帧是一个广播帧。不过很显然，路由器并没有回应其中的ARP请求，正如前文讨论的那样。</li>
+</ul>
+<h5 id="DNS工作原理"><a href="#DNS工作原理" class="headerlink" title="DNS工作原理"></a>DNS工作原理</h5><p>我们通常使用机器的域名来访问这台机器，而不直接使用其IP地址，比如访问因特网上的各种网站。那么如何将机器的域名转换成IP地址呢？这就需要使用域名查询服务。域名查询服务有很多种实现方式，比如NIS（Network Information Service，网络信息服务）、DNS和本地静态文件等。本节主要讨论DNS。  </p>
+<p>DNS是一套分布式的域名服务系统。每个DNS服务器上都存放着大量的机器名和IP地址的映射，并且是动态更新的。众多网络客户端程序都使用DNS协议来向DNS服务器查询目标主机的IP地址 。</p>
+<p><strong>linux下访问DNS服务</strong></p>
+<p><img src="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20241105165406313.png" alt="image-20241105165406313"></p>
+<p>host命令的输出告诉我们，机器名<a target="_blank" rel="noopener" href="http://www.baidu.com是www.a.shifen.com.的别名,并且该机器名对应两个ip地址.host命令使用dns协议和dns服务器通信,其-t选项告诉dns协议使用哪种查询类型.我们这里使用的是a类型,即通过机器的域名获得其ip地址(但实际上返回的资源记录中还包含机器的别名).关于host命令的详细使用方法,请参考其man手册./">www.baidu.com是www.a.shifen.com.的别名，并且该机器名对应两个IP地址。host命令使用DNS协议和DNS服务器通信，其-t选项告诉DNS协议使用哪种查询类型。我们这里使用的是A类型，即通过机器的域名获得其IP地址（但实际上返回的资源记录中还包含机器的别名）。关于host命令的详细使用方法，请参考其man手册。</a></p>
+<p><strong>使用tcpdump观察DNS通信过程</strong></p>
+<p><img src="https://adonkey.oss-cn-beijing.aliyuncs.com/picgo/image-20241105165709556.png"></p>
+<p>​	这两个数据包开始的“IP”指出，它们后面的内容描述的是IP数据报。tcpdump以“IP地址.端口号”的形式来描述通信的某一端；以“＞”表示数据传输的方向，“＞”前面是源端，后面是目的端。可见，第一个数据包是测试机器ernest-laptop（IP地址是192.168.1.108）向其首选DNS服务器（IP地址是219.239.26.42）发送的DNS查询报文（目标端口53是DNS服务使用的端口，这一点我们在前面介绍过），第二个数据包是服务器反馈的DNS应答报文。</p>
+<p>​	第一个数据包中，数值57428是DNS查询报文的标识值，因此该值也出现在DNS应答报文中。“+”表示启用递归查询标志。“A?”表示使用A类型的查询方式。“<a target="_blank" rel="noopener" href="http://www.baidu.com”则是dns查询问题中的查询名.括号中的数值31是dns查询报文的长度(以字节为单位)./">www.baidu.com”则是DNS查询问题中的查询名。括号中的数值31是DNS查询报文的长度（以字节为单位）。</a></p>
+<p>​	第二个数据包中，“3&#x2F;4&#x2F;4”表示该报文中包含3个应答资源记录、4个授权资源记录和4个额外信息记录。“CNAME <a target="_blank" rel="noopener" href="http://www.a.shifen.com.,a/">www.a.shifen.com.，A</a> 119.75.218.77，A 119.75.217.56”则表示3个应答资源记录的内容。其中CNAME表示紧随其后的记录是机器的别名，A表示紧随其后的记录是IP地址。该应答报文的长度为226字节。  </p>
+<h5 id="socket和TCP-IP协议族的关系"><a href="#socket和TCP-IP协议族的关系" class="headerlink" title="socket和TCP&#x2F;IP协议族的关系"></a>socket和TCP&#x2F;IP协议族的关系</h5><p>​	1.数据链路层、网络层、传输层协议是在内核中实现的。因此操作系统需要实现一组系统调用，使得应用程序能够访问这些协议提供的服务。实现这组系统调用的API（Application Programming Interface，应用程序编程接口）主要有两套：socket和XTI。XTI现在基本不再使用  。<br>​	2.由socket定义的这一组API提供如下两点功能：一是将应用程序数据从用户缓冲区中复制到TCP&#x2F;UDP内核发送缓冲区，以交付内核来发送数据（比如图1-5所示的send函数），或者是从内核TCP&#x2F;UDP接收缓冲区中复制数据到用户缓冲区，以读取数据；二是应用程序可以通过它们来修改内核中各层协议的某些头部信息或其他数据结构，从而精细地控制底层通信的行为。比如可以通过setsockopt函数来设置IP数据报在网络上的存活时间。<br>​	3.socket是一套通用网络编程接口，它不但可以访问内核中TCP&#x2F;IP协议栈，而且可以访问其他网络协议栈（比如X.25协议栈、UNIX本地域协议栈等）。  </p>
 <h4 id="第二章-IP协议详解"><a href="#第二章-IP协议详解" class="headerlink" title="第二章 IP协议详解"></a>第二章 IP协议详解</h4><h4 id="第三章-TCP协议详解"><a href="#第三章-TCP协议详解" class="headerlink" title="第三章 TCP协议详解"></a>第三章 TCP协议详解</h4><h4 id="第四章-TCP-IP通信案例访问Internet"><a href="#第四章-TCP-IP通信案例访问Internet" class="headerlink" title="第四章 TCP&#x2F;IP通信案例访问Internet"></a>第四章 TCP&#x2F;IP通信案例访问Internet</h4>
       
     </div>
@@ -1400,7 +1425,7 @@ vim boa.c  //注释掉下面部分
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://example.com/2024/08/28/socket%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B/">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2024/08/21/%E5%9B%BD%E7%BD%91%E9%A1%B9%E7%9B%AE%E6%9C%8D%E5%8A%A1%E5%99%A8%E8%AE%BE%E8%AE%A1/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/avatar.gif">
@@ -1414,7 +1439,7 @@ vim boa.c  //注释掉下面部分
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
           
-            <a href="/2024/08/28/socket%E7%BD%91%E7%BB%9C%E7%BC%96%E7%A8%8B/" class="post-title-link" itemprop="url">socket网络编程</a>
+            <a href="/2024/08/21/%E5%9B%BD%E7%BD%91%E9%A1%B9%E7%9B%AE%E6%9C%8D%E5%8A%A1%E5%99%A8%E8%AE%BE%E8%AE%A1/" class="post-title-link" itemprop="url">国网项目服务器设计</a>
         </h2>
 
         <div class="post-meta">
@@ -1424,7 +1449,7 @@ vim boa.c  //注释掉下面部分
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2024-08-28 08:00:00" itemprop="dateCreated datePublished" datetime="2024-08-28T08:00:00+08:00">2024-08-28</time>
+              <time title="创建时间：2024-08-21 08:00:00" itemprop="dateCreated datePublished" datetime="2024-08-21T08:00:00+08:00">2024-08-21</time>
             </span>
               <span class="post-meta-item">
                 <span class="post-meta-item-icon">
@@ -1439,7 +1464,7 @@ vim boa.c  //注释掉下面部分
               </span>
               <span class="post-meta-item-text">分类于</span>
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/C/" itemprop="url" rel="index"><span itemprop="name">C++</span></a>
+                  <a href="/categories/%E8%AE%A1%E7%AE%97%E6%9C%BA%E7%BD%91%E7%BB%9C/" itemprop="url" rel="index"><span itemprop="name">计算机网络</span></a>
                 </span>
             </span>
 
@@ -1449,14 +1474,14 @@ vim boa.c  //注释掉下面部分
                 <i class="far fa-file-word"></i>
               </span>
                 <span class="post-meta-item-text">本文字数：</span>
-              <span>4.2k</span>
+              <span>2k</span>
             </span>
             <span class="post-meta-item" title="阅读时长">
               <span class="post-meta-item-icon">
                 <i class="far fa-clock"></i>
               </span>
                 <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>4 分钟</span>
+              <span>2 分钟</span>
             </span>
 
         </div>
@@ -1468,162 +1493,35 @@ vim boa.c  //注释掉下面部分
     <div class="post-body" itemprop="articleBody">
 
       
-          <h2 id="day01"><a href="#day01" class="headerlink" title="day01"></a>day01</h2><h3 id="注意事项"><a href="#注意事项" class="headerlink" title="注意事项"></a>注意事项</h3><ul>
-<li>在使用 accept 和 connect 之前，需要确保套接字已经正确创建并配置（例如，对于 accept，需要先绑定（bind）和监听（listen）套接字；对于 connect，需要先创建套接字并指定服务器的地址）。</li>
+          <p>本次博客用于记录协作开发基于socket传图过程中所学内容。</p>
+<h1 id="客户端代码"><a href="#客户端代码" class="headerlink" title="客户端代码"></a>客户端代码</h1><h2 id="代码框架"><a href="#代码框架" class="headerlink" title="代码框架"></a>代码框架</h2><h3 id="接收回调-菜单"><a href="#接收回调-菜单" class="headerlink" title="接收回调 菜单"></a>接收回调 菜单</h3><h3 id="创建线程"><a href="#创建线程" class="headerlink" title="创建线程"></a>创建线程</h3><h3 id="零拷贝机制"><a href="#零拷贝机制" class="headerlink" title="零拷贝机制"></a>零拷贝机制</h3><h3 id="字节序"><a href="#字节序" class="headerlink" title="字节序"></a>字节序</h3><p>大小端字节序&#x2F;结构体对齐&#x2F;gdb调试</p>
+<h3 id="socket"><a href="#socket" class="headerlink" title="socket"></a>socket</h3><p>fsync刷新缓冲区 read阻塞</p>
+<h3 id="文件描述符"><a href="#文件描述符" class="headerlink" title="文件描述符"></a>文件描述符</h3><p>C语言读写文件</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span><span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span><span class="string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span></span><br><span class="line">&#123;</span><br><span class="line">    FILE* fp = fopen(<span class="string">&quot;./log.txt&quot;</span>, <span class="string">&quot;w&quot;</span>);</span><br><span class="line">    <span class="keyword">if</span>(fp == <span class="literal">NULL</span>)&#123;</span><br><span class="line">        perror(<span class="string">&quot;fopen failed ! \n&quot;</span>);</span><br><span class="line">        <span class="keyword">return</span> <span class="number">-1</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// int cnt = 10;</span></span><br><span class="line">    <span class="comment">// while(cnt --)&#123;</span></span><br><span class="line">    <span class="comment">//     const char * msg = &quot;hello file ! \n&quot;;</span></span><br><span class="line">    <span class="comment">//     fputs(msg, fp);</span></span><br><span class="line">    <span class="comment">// &#125;</span></span><br><span class="line">    <span class="built_in">fprintf</span>(fp, <span class="string">&quot;FILE pointer write pattern ! This is a test file . \n&quot;</span>);</span><br><span class="line">    fclose(fp);</span><br><span class="line"></span><br><span class="line">    FILE* fp_read = fopen(<span class="string">&quot;./log.txt&quot;</span>, <span class="string">&quot;r&quot;</span>);</span><br><span class="line">    <span class="keyword">if</span>(fp_read == <span class="literal">NULL</span>) &#123;</span><br><span class="line">        perror(<span class="string">&quot;fopen read failed ! \n&quot;</span>);</span><br><span class="line">        <span class="keyword">return</span> <span class="number">-1</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="type">char</span> buffer[<span class="number">1024</span>];</span><br><span class="line">    <span class="keyword">while</span>(fgets(buffer, <span class="keyword">sizeof</span>(buffer), fp_read))&#123;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;%s \n&quot;</span>, buffer);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// if(feof(fp_read))&#123;</span></span><br><span class="line">    <span class="comment">//     printf(&quot;fgets quit normal! \n&quot;);</span></span><br><span class="line">    <span class="comment">// &#125;</span></span><br><span class="line">    <span class="comment">// else&#123;</span></span><br><span class="line">    <span class="comment">//     printf(&quot;fgets quit not normal ! \n&quot;);</span></span><br><span class="line">    <span class="comment">// &#125;</span></span><br><span class="line">    fclose(fp_read);</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>Cpp读取文件</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;fstream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;string&gt;</span></span></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="function">std::ofstream <span class="title">out</span><span class="params">(<span class="string">&quot;./log.txt&quot;</span>, std::ios::out|std::ios::binary)</span></span>;</span><br><span class="line">    <span class="keyword">if</span>(!out.<span class="built_in">is_open</span>())&#123;</span><br><span class="line">        std::cerr &lt;&lt; <span class="string">&quot;open failed ! \n&quot;</span> &lt;&lt; std::endl;</span><br><span class="line">        <span class="keyword">return</span> <span class="number">-1</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    std::string msg = <span class="string">&quot;Hello, this is cpp file descriptor ! \n&quot;</span>;</span><br><span class="line">    <span class="type">int</span> cnt = <span class="number">10</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">while</span>(cnt --)&#123;</span><br><span class="line">        <span class="comment">/*  函数原型 const char* c_str();</span></span><br><span class="line"><span class="comment">            由于c语言没有string类型 使用c_str()将string转化为const char*</span></span><br><span class="line"><span class="comment">        */</span></span><br><span class="line">        out.<span class="built_in">write</span>(msg.<span class="built_in">c_str</span>(), msg.<span class="built_in">size</span>());</span><br><span class="line">    &#125;</span><br><span class="line">    out.<span class="built_in">close</span>();</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+
+
+<h3 id="校验-MD5-CRC"><a href="#校验-MD5-CRC" class="headerlink" title="校验 MD5 CRC"></a>校验 MD5 CRC</h3><h2 id="调试"><a href="#调试" class="headerlink" title="调试"></a>调试</h2><h3 id="git"><a href="#git" class="headerlink" title="git"></a>git</h3><ul>
+<li>合作开发:先git pull 再 git push</li>
+<li>在gitignore文件中写*png此时远程仓库若没有任何png文件，中再次上传时会自动忽略</li>
+<li>git pull遇到conflict 自动合并出现问题需要手动解决冲突，再次add后commit即可pull</li>
 </ul>
-<h3 id="bzero"><a href="#bzero" class="headerlink" title="bzero"></a>bzero</h3><ul>
-<li>可用于初始化结构体 入口参数是addr和size</li>
+<h3 id="磁盘损坏"><a href="#磁盘损坏" class="headerlink" title="磁盘损坏"></a>磁盘损坏</h3><h3 id="粘包"><a href="#粘包" class="headerlink" title="粘包"></a>粘包</h3><p>gdb生成调试core文件</p>
+<h1 id="服务器代码"><a href="#服务器代码" class="headerlink" title="服务器代码"></a>服务器代码</h1><h2 id="代码框架-1"><a href="#代码框架-1" class="headerlink" title="代码框架"></a>代码框架</h2><h3 id="函数原型"><a href="#函数原型" class="headerlink" title="函数原型"></a>函数原型</h3><p>在 C 语言中，<code>nanosleep</code> 函数定义在 <code>&lt;time.h&gt;</code> 头文件中，其原型如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;time.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">nanosleep</span><span class="params">(<span class="type">const</span> <span class="keyword">struct</span> timespec *reqtp, <span class="keyword">struct</span> timespec *remtp)</span>;</span><br></pre></td></tr></table></figure>
+
+<h3 id="参数"><a href="#参数" class="headerlink" title="参数"></a>参数</h3><ul>
+<li>**<code>reqtp</code>**：指向 <code>timespec</code> 结构的指针，该结构指定了要延迟的时间。<code>timespec</code> 结构包含两个成员：<code>tv_sec</code>（秒数）和 <code>tv_nsec</code>（纳秒数）。</li>
+<li>**<code>remtp</code>**：指向 <code>timespec</code> 结构的指针，如果函数被信号中断，该结构将被用来存储未休眠的时间。</li>
 </ul>
-<h3 id="socklen-t"><a href="#socklen-t" class="headerlink" title="socklen_t"></a>socklen_t</h3><ul>
-<li>用于表示套接字地址结构的长度</li>
-<li>传递地址长度：在调用如 bind、connect、accept、getsockname、getpeername 等函数时，socklen_t 用于指定套接字地址结构的长度，或者用于接收函数返回的实际长度。</li>
-<li>确保类型安全：由于历史原因，一些旧的网络函数可能期望地址长度参数是一个特定类型的指针（如 int *），而不是 socklen_t *。使用 socklen_t 可以帮助确保类型的正确性和兼容性。</li>
-<li>避免溢出：由于 socklen_t 是无符号类型，它可以防止地址长度的溢出，这在处理来自不受信任来源的数据时尤其重要。</li>
-</ul>
-<h3 id="bind函数原型"><a href="#bind函数原型" class="headerlink" title="bind函数原型"></a>bind函数原型</h3><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">int</span> <span class="title">bind</span><span class="params">(<span class="type">int</span> sockfd, <span class="type">const</span> <span class="keyword">struct</span> sockaddr *addr, <span class="type">socklen_t</span> addrlen)</span></span>;</span><br></pre></td></tr></table></figure>
-<p>参数说明：</p>
-<ul>
-<li>sockfd：套接字文件描述符，这个套接字应该是之前已经创建的。</li>
-<li>addr：指向 sockaddr 结构的指针，该结构包含了套接字要绑定的地址信息。对于 IPv4，这通常是 struct sockaddr_in 结构；对于 IPv6，则是 struct sockaddr_in6 结构。</li>
-<li>addrlen：addr 指向的地址结构的大小。</li>
-</ul>
-<p>返回值：</p>
-<ul>
-<li>成功时，bind 函数返回 0。</li>
-<li>失败时，返回 -1 并设置全局变量 errno 以指示错误原因。</li>
-</ul>
-<h3 id="listen函数原型"><a href="#listen函数原型" class="headerlink" title="listen函数原型"></a>listen函数原型</h3><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">int</span> <span class="title">listen</span><span class="params">(<span class="type">int</span> sockfd, <span class="type">int</span> backlog)</span></span></span><br></pre></td></tr></table></figure>
-<p>参数说明：</p>
-<ul>
-<li>sockfd：套接字文件描述符，这个套接字应该是之前已经创建并且绑定到一个地址上的。</li>
-<li>backlog：这个参数指定了内核应该为相应套接字排队的最大连接个数。这个数值不能超过系统特定的上限，通常在 &#x2F;proc&#x2F;sys&#x2F;net&#x2F;core&#x2F;somaxconn 文件中定义。</li>
-</ul>
-<p>返回值：</p>
-<ul>
-<li>成功时，listen 函数返回 0。</li>
-<li>失败时，返回 -1 并设置全局变量 errno 以指示错误原因。</li>
-</ul>
-<h3 id="accept函数原型"><a href="#accept函数原型" class="headerlink" title="accept函数原型"></a>accept函数原型</h3><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">int</span> <span class="title">accept</span><span class="params">(<span class="type">int</span> sockfd, <span class="keyword">struct</span> sockaddr* addr, <span class="type">socklen_t</span>* addrlen)</span></span>;</span><br></pre></td></tr></table></figure>
-<p>参数说明：</p>
-<ul>
-<li>sockfd：监听套接字的文件描述符。</li>
-<li>addr：（可选）指向 sockaddr 结构的指针，用于存储连接客户端的地址信息。如果不需要客户端地址，可以设置为 NULL。</li>
-<li>addrlen：（可选）指向 socklen_t 类型变量的指针，该变量在调用 accept 时应该包含 addr 指向的缓冲区的大小。accept 成功返回后，该变量会包含实际客户端地址的大小。如果不需要客户端地址，可以设置为 NULL。</li>
-<li>accept函数会阻塞当前程序，直至有一个客户端socket被接受程序才继续往下进行</li>
-</ul>
-<h3 id="connect函数原型"><a href="#connect函数原型" class="headerlink" title="connect函数原型"></a>connect函数原型</h3><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">int</span> <span class="title">connect</span><span class="params">(<span class="type">int</span> sockfd, <span class="type">const</span> <span class="keyword">struct</span> sockaddr* addr, <span class="type">socklen_t</span> addrlen)</span></span>;</span><br></pre></td></tr></table></figure>
-<p>参数说明：</p>
-<ul>
-<li>sockfd：客户端的套接字文件描述符。</li>
-<li>addr：指向 sockaddr 结构的指针，该结构包含了服务器端套接字的地址信息。</li>
-<li>addrlen：addr 指向的 sockaddr 结构的大小。</li>
-<li>connect函数也是阻塞调用 连接成功&#x2F;失败&#x2F;超时</li>
-</ul>
-<p>返回值：</p>
-<ul>
-<li>accept 和 connect 函数在成功时返回非负值。</li>
-<li>accept 返回一个新的文件描述符，用于与客户端通信的已连接套接字。</li>
-<li>connect 返回 0 表示连接成功。</li>
-<li>在失败时，这两个函数都会返回 -1，并设置全局变量 errno 以指示错误的具体原因。</li>
-</ul>
-<h2 id="day02"><a href="#day02" class="headerlink" title="day02"></a>day02</h2><h3 id="注意事项-1"><a href="#注意事项-1" class="headerlink" title="注意事项"></a>注意事项</h3><ul>
-<li>printf输出到屏幕记得加\n 否则会暂存在缓冲区</li>
-<li>inet_ntop 和 inet_pton 函数是线程安全的。</li>
-<li>read 和 write 函数通常用于文件 I&#x2F;O，但也可以用于套接字 I&#x2F;O，尤其是在使用 Unix 域套接字时。<br>recv send函数专门用于网络套接字，它提供了一些特定于网络操作的标志，如 MSG_DONTWAIT 来执行非阻塞接收。</li>
-</ul>
-<h3 id="size-t"><a href="#size-t" class="headerlink" title="size_t"></a>size_t</h3><ul>
-<li>size_t 是 C 语言标准库中定义的一个数据类型，它是一个无符号整数类型，通常用于表示对象的大小或数组中的元素数量。在内存分配、数组索引和其他需要表示内存大小或对象数量的上下文中，size_t 是一个常用的类型。它的定义通常在头文件 &lt;stddef.h&gt; 或 &lt;sys&#x2F;types.h&gt; 中。</li>
-<li>可用于内存分配，数组大小，字符串长度，I&#x2F;O操作<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//内存操作</span></span><br><span class="line"><span class="type">size_t</span> num_bytes = <span class="number">1024</span>;</span><br><span class="line"><span class="type">void</span>* buf = <span class="built_in">malloc</span>(num_types)</span><br><span class="line"><span class="comment">//I/O操作</span></span><br><span class="line"><span class="type">size_t</span> bytes_to_read = <span class="number">512</span>;</span><br><span class="line"><span class="type">ssize_t</span> bytes_read = <span class="built_in">read</span>(file_descriptor, buffer, bytes_to_read);</span><br></pre></td></tr></table></figure></li>
-</ul>
-<h3 id="ssize-t"><a href="#ssize-t" class="headerlink" title="ssize_t"></a>ssize_t</h3><p>参数说明：</p>
-<ul>
-<li><p>ssize_t 通常在 &lt;sys&#x2F;types.h&gt; 头文件中定义</p>
-</li>
-<li><p>文件读写：如 read 和 write 系统调用，它们返回从文件中读取或写入文件的字节数，或者在出错时返回 -1。</p>
-</li>
-<li><p>字符串和内存操作：如 strlen 函数，它返回字符串的长度，使用 ssize_t 类型可以确保即使是非常长的字符串也能正确返回其长度。</p>
-</li>
-<li><p>网络编程：如 send 和 recv 函数，它们返回成功发送或接收的字节数，或者在出错时返回 -1。</p>
-</li>
-</ul>
-<p>ssize_t和size_t区别：</p>
-<p>1.有符号与无符号：</p>
-<ul>
-<li>size_t 是一个无符号整数类型，用于表示对象的大小或者数组中元素的数量。由于它不能表示负值，所以它只能用于表示非负的内存大小或计数。</li>
-<li>ssize_t 是一个有符号整数类型，通常用于表示可以失败的系统调用的返回值，比如文件的读写操作。它可以表示负值，用于表示错误或者特定的状态。</li>
-</ul>
-<p>2.用途：</p>
-<ul>
-<li>size_t 通常用于内存分配（如 malloc、calloc 等函数的返回值），数组索引，以及任何需要表示大小或计数的上下文。</li>
-<li>ssize_t 通常用于系统调用和库函数的返回值，如 read、write、send、recv 等，这些函数可能会失败并返回错误码（负值）。</li>
-</ul>
-<h3 id="read"><a href="#read" class="headerlink" title="read"></a>read</h3><p>read函数用于从文件描述符读取数据，它也可以用于从套接字读取数据。阻塞函数，直到有数据可读</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="function"><span class="type">ssize_t</span> <span class="title">read</span><span class="params">(<span class="type">int</span> fd, <span class="type">void</span>* buf, <span class="type">size_t</span> count)</span></span>;</span><br></pre></td></tr></table></figure>
-<p>参数说明：</p>
-<ul>
-<li>fd：文件描述符，可以是任何类型的文件、设备或套接字。</li>
-<li>buf：指向缓冲区的指针，用于存储从文件描述符读取的数据。</li>
-<li>count：要读取的最大字节数。<br>返回值：</li>
-<li>read 成功时返回读取的字节数，出错时返回 -1。</li>
-<li>如果到达文件或套接字的末尾（EOF），read 函数返回 0</li>
-</ul>
-<h3 id="write"><a href="#write" class="headerlink" title="write"></a>write</h3><p>write 函数用于将数据写入文件描述符，它也可以用于将数据发送到套接字。</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;sys/socket.h&gt;</span></span></span><br><span class="line"><span class="function"><span class="type">ssize_t</span> <span class="title">recv</span><span class="params">(<span class="type">int</span> sockfd, <span class="type">void</span> *buf, <span class="type">size_t</span> len, <span class="type">int</span> flags)</span></span>;</span><br></pre></td></tr></table></figure>
-<p>参数说明：</p>
-<ul>
-<li>fd：文件描述符，可以是任何类型的文件、设备或套接字。</li>
-<li>buf：指向缓冲区的指针，包含要写入文件描述符的数据。</li>
-<li>count：要写入的最大字节数。<br>返回值：</li>
-<li>write 成功时返回写入的字节数，出错时返回 -1。</li>
-</ul>
-<h3 id="recv"><a href="#recv" class="headerlink" title="recv"></a>recv</h3><p>recv 函数是 BSD 套接字 API 的一部分，专门用于从套接字接收数据。</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;sys/socket.h&gt;</span></span></span><br><span class="line"><span class="function"><span class="type">ssize_t</span> <span class="title">recv</span><span class="params">(<span class="type">int</span> sockfd, <span class="type">void</span> *buf, <span class="type">size_t</span> len, <span class="type">int</span> flags)</span></span>;</span><br></pre></td></tr></table></figure>
-<p>参数说明：</p>
-<ul>
-<li>sockfd：套接字文件描述符。</li>
-<li>buf：指向缓冲区的指针，用于存储从套接字接收的数据。</li>
-<li>len：要接收的最大字节数。</li>
-<li>flags：指定接收操作的行为，通常设置为 0。可以设置 MSG_OOB 来接收带外数据，MSG_PEEK 来窥视数据但不从队列中移除，MSG_WAITALL 来等待所有数据到达等。<br>返回值：</li>
-<li>recv 成功时返回读取的字节数，出错时返回 -1。</li>
-</ul>
-<h3 id="send"><a href="#send" class="headerlink" title="send"></a>send</h3><p>send 函数用于向与套接字相关联的对等点发送数据。</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">ssize_t</span> <span class="title">send</span><span class="params">(<span class="type">int</span> sockfd, <span class="type">const</span> <span class="type">void</span>* buf, <span class="type">size_t</span> len, <span class="type">int</span> flags)</span></span></span><br></pre></td></tr></table></figure>
-<p>参数说明：</p>
-<ul>
-<li>sockfd：套接字文件描述符。</li>
-<li>buf：指向要发送数据的缓冲区的指针。</li>
-<li>len：要发送的数据的长度。</li>
-<li>flags：指定发送操作的行为，通常设置为 0。</li>
-</ul>
-<p>返回值：</p>
-<ul>
-<li>send 成功时返回发送的字节数，出错时返回 -1。</li>
-</ul>
-<h3 id="inet-ntop"><a href="#inet-ntop" class="headerlink" title="inet_ntop"></a>inet_ntop</h3><p>inet_ntop 函数用于将网络地址从二进制形式转换为文本形式的 IP 地址。</p>
-<ul>
-<li>n 代表 “number”，这里指的是网络地址的数值形式，通常是二进制形式的网络地址。</li>
-<li>p 代表 “presentation”，这里指的是网络地址的表示形式，即人类可读的格式，如 IPv4 或 IPv6 的点分十进制表示。<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;arpa/inet.h&gt;</span></span></span><br><span class="line"><span class="function"><span class="type">const</span> <span class="type">char</span>* <span class="title">inet_ntop</span><span class="params">(<span class="type">int</span> af, <span class="type">const</span> <span class="type">void</span>* src, <span class="type">char</span>* dst, <span class="type">socklen_t</span> size)</span></span>;</span><br></pre></td></tr></table></figure>
-参数说明：</li>
-<li>af：地址族，例如 AF_INET 或 AF_INET6。</li>
-<li>src：指向二进制网络地址的指针。</li>
-<li>dst：指向用于存储转换后的文本地址的缓冲区的指针。</li>
-<li>size：dst 缓冲区的大小。</li>
-</ul>
-<p>返回值：</p>
-<ul>
-<li>inet_ntop 返回一个指向转换后的文本地址的指针，或者在出错时返回 NULL。</li>
-</ul>
-<h3 id="inet-pton"><a href="#inet-pton" class="headerlink" title="inet_pton"></a>inet_pton</h3><p>inet_pton 函数用于将文本形式的 IP 地址转换为二进制形式的网络地址。</p>
-<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;arpa/inet.h&gt;</span></span></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">inet_pton</span><span class="params">(<span class="type">int</span> af, <span class="type">const</span> <span class="type">char</span>* src, <span class="type">void</span>* dst)</span></span>;</span><br></pre></td></tr></table></figure>
-<p>参数说明：</p>
-<ul>
-<li>af：地址族，例如 AF_INET 或 AF_INET6。</li>
-<li>src：指向文本形式的 IP 地址字符串的指针。</li>
-<li>dst：指向用于存储转换后的二进制网络地址的缓冲区的指针。</li>
-</ul>
-<p>返回值：</p>
-<ul>
-<li>inet_pton 成功时返回 1，出错时返回 -1，如果输入地址无效则返回 0。</li>
+<h3 id="返回值"><a href="#返回值" class="headerlink" title="返回值"></a>返回值</h3><ul>
+<li>如果函数成功执行，<code>nanosleep</code> 返回 <code>0</code>。</li>
+<li>如果函数被信号中断，返回一个错误，并将剩余的睡眠时间存储在 <code>remtp</code> 指向的 <code>timespec</code> 结构中。</li>
 </ul>
 
       
@@ -1709,7 +1607,7 @@ vim boa.c  //注释掉下面部分
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">14</span>
+          <span class="site-state-item-count">13</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -1758,12 +1656,12 @@ vim boa.c  //注释掉下面部分
     <span class="post-meta-item-icon">
       <i class="fa fa-chart-area"></i>
     </span>
-    <span title="站点总字数">71k</span>
+    <span title="站点总字数">69k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
-    <span title="站点阅读时长">1:04</span>
+    <span title="站点阅读时长">1:03</span>
 </div>
   <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
   </div>
